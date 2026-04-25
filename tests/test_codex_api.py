@@ -7,8 +7,10 @@ from custom_components.codex_conversation.codex_api import (
     AbstractAuth,
     CodexClient,
     CodexRequest,
+    ImageGenerationCall,
 )
 from custom_components.codex_conversation.codex_api.models import CodexModel
+from custom_components.codex_conversation.codex_api.sse import parse_event
 from custom_components.codex_conversation.config_flow import (
     latest_available_model,
     recommended_options_from_models,
@@ -97,6 +99,25 @@ def test_request_uses_capabilities_for_non_codex_models() -> None:
     assert "reasoning" not in body
     assert "text" not in body
     assert "include" not in body
+
+
+def test_parse_event_parses_image_generation_call() -> None:
+    """Completed image-generation calls should expose generated image data."""
+    event = parse_event(
+        '{"type":"response.output_item.done","item":{'
+        '"type":"image_generation_call",'
+        '"id":"ig_123",'
+        '"status":"completed",'
+        '"revised_prompt":"A bright kitchen",'
+        '"result":"aW1hZ2U="'
+        "}}"
+    )
+
+    assert isinstance(event, ImageGenerationCall)
+    assert event.id == "ig_123"
+    assert event.status == "completed"
+    assert event.revised_prompt == "A bright kitchen"
+    assert event.result == "aW1hZ2U="
 
 
 def test_request_omits_model_for_automatic_backend_default() -> None:

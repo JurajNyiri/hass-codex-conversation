@@ -40,6 +40,7 @@ from .codex_api import (
     CodexServerOverloaded,
     FunctionCallAdded,
     FunctionCallArgumentsDone,
+    ImageGenerationCall,
     OutputTextDelta,
     ReasoningSummaryDelta,
 )
@@ -210,12 +211,16 @@ async def async_run_chat_log(
     supports_reasoning: bool | None = None,
     supports_reasoning_summaries: bool | None = None,
     supports_text_verbosity: bool | None = None,
+    extra_tools: list[dict] | None = None,
+    image_generation_calls: list[ImageGenerationCall] | None = None,
     max_iterations: int = MAX_TOOL_ITERATIONS,
     instructions_suffix: str = "",
     error_cls: type[Exception] = HomeAssistantError,
 ) -> None:
     """Execute a ChatLog against the Codex Responses API."""
     tools = [format_tool(t) for t in chat_log.llm_api.tools] if chat_log.llm_api else []
+    if extra_tools:
+        tools.extend(extra_tools)
     instructions = extract_instructions(chat_log)
     if instructions_suffix:
         instructions = (
@@ -256,7 +261,11 @@ async def async_run_chat_log(
         try:
             async for _ in chat_log.async_add_delta_content_stream(
                 entity_id,
-                _events_to_deltas(client, request),
+                _events_to_deltas(
+                    client,
+                    request,
+                    image_generation_calls=image_generation_calls,
+                ),
             ):
                 pass
         except (
@@ -285,6 +294,7 @@ async def async_run_chat_log(
 async def _events_to_deltas(
     client: CodexClient,
     request: CodexRequest,
+    image_generation_calls: list[ImageGenerationCall] | None = None,
 ) -> AsyncGenerator[AssistantContentDeltaDict, None]:
     """Convert Codex ResponseEvents to HA's AssistantContentDeltaDict stream."""
     started = False
@@ -322,3 +332,7 @@ async def _events_to_deltas(
 
         elif isinstance(event, ReasoningSummaryDelta):
             _LOGGER.debug("codex reasoning: %.80s", event.delta)
+
+        elif isinstance(event, ImageGenerationCall):
+            if image_generation_calls is not None:
+                image_generation_calls.append(event)

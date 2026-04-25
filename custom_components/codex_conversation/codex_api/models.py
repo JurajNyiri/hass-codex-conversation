@@ -163,6 +163,16 @@ class FunctionCallArgumentsDone:
     item_id: str
 
 
+@dataclass
+class ImageGenerationCall:
+    """Completed image-generation tool call returned by the Responses API."""
+
+    id: str
+    status: str
+    result: str
+    revised_prompt: str | None = None
+
+
 # Convenience union — use with isinstance() checks
 ResponseEvent = Union[
     ResponseCreated,
@@ -176,4 +186,5 @@ ResponseEvent = Union[
     FunctionCallAdded,
     FunctionCallArgumentsDelta,
     FunctionCallArgumentsDone,
+    ImageGenerationCall,
 ]

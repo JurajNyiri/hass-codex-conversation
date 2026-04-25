@@ -27,6 +27,7 @@ from .models import (
     FunctionCallAdded,
     FunctionCallArgumentsDelta,
     FunctionCallArgumentsDone,
+    ImageGenerationCall,
     OutputItemAdded,
     OutputItemDone,
     OutputTextDelta,
@@ -111,7 +112,15 @@ def parse_event(data_str: str) -> ResponseEvent | None:
         return OutputItemAdded(item=item)
 
     if etype == "response.output_item.done":
-        return OutputItemDone(item=evt.get("item") or {})
+        item = evt.get("item") or {}
+        if item.get("type") == "image_generation_call":
+            return ImageGenerationCall(
+                id=item.get("id", ""),
+                status=item.get("status", ""),
+                result=item.get("result", ""),
+                revised_prompt=item.get("revised_prompt"),
+            )
+        return OutputItemDone(item=item)
 
     # ── function call arguments ────────────────────────────────────────────────
 

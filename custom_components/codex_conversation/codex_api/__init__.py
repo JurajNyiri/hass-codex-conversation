@@ -42,6 +42,7 @@ from .models import (
     FunctionCallAdded,
     FunctionCallArgumentsDelta,
     FunctionCallArgumentsDone,
+    ImageGenerationCall,
     OutputItemAdded,
     OutputItemDone,
     OutputTextDelta,
@@ -90,6 +91,7 @@ __all__ = [
     "FunctionCallAdded",
     "FunctionCallArgumentsDelta",
     "FunctionCallArgumentsDone",
+    "ImageGenerationCall",
     "ResponseEvent",
     # requests
     "CodexRequest",

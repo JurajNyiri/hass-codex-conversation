@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import base64
+import binascii
 from json import JSONDecodeError
 import logging
 
@@ -14,7 +16,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util.json import json_loads
 
-from .codex_api import CodexClient
+from .codex_api import CodexClient, ImageGenerationCall
 from .const import (
     CONF_MODEL,
     CONF_MODEL_SUPPORTS_REASONING,
@@ -71,7 +73,11 @@ class CodexAITaskEntity(ai_task.AITaskEntity):
         self._oauth_session = oauth_session
         self._attr_unique_id = subentry.subentry_id
         self._attr_name = subentry.title
-        self._attr_supported_features = ai_task.AITaskEntityFeature.GENERATE_DATA
+        self._attr_supported_features = (
+            ai_task.AITaskEntityFeature.GENERATE_DATA
+            | ai_task.AITaskEntityFeature.GENERATE_IMAGE
+            | ai_task.AITaskEntityFeature.SUPPORT_ATTACHMENTS
+        )
 
     @property
     def _options(self) -> dict:
@@ -147,6 +153,63 @@ class CodexAITaskEntity(ai_task.AITaskEntity):
             data=data,
         )
 
+    async def _async_generate_image(
+        self,
+        task: ai_task.GenImageTask,
+        chat_log: conversation.ChatLog,
+    ) -> ai_task.GenImageTaskResult:
+        """Handle a generate image task."""
+        auth = CodexHAAuth(
+            session=async_get_clientsession(self.hass),
+            oauth_session=self._oauth_session,
+        )
+        client = CodexClient(auth)
+        image_calls: list[ImageGenerationCall] = []
+
+        await async_run_chat_log(
+            chat_log=chat_log,
+            client=client,
+            model=self._options.get(CONF_MODEL, DEFAULT_MODEL),
+            entity_id=self.entity_id,
+            reasoning_effort=self._options.get(
+                CONF_REASONING_EFFORT, RECOMMENDED_REASONING_EFFORT
+            ),
+            reasoning_summary=self._options.get(
+                CONF_REASONING_SUMMARY, RECOMMENDED_REASONING_SUMMARY
+            ),
+            text_verbosity=self._options.get(
+                CONF_TEXT_VERBOSITY, RECOMMENDED_TEXT_VERBOSITY
+            ),
+            supports_reasoning=self._options.get(CONF_MODEL_SUPPORTS_REASONING),
+            supports_reasoning_summaries=self._options.get(
+                CONF_MODEL_SUPPORTS_REASONING_SUMMARIES
+            ),
+            supports_text_verbosity=self._options.get(
+                CONF_MODEL_SUPPORTS_TEXT_VERBOSITY
+            ),
+            extra_tools=[{"type": "image_generation", "output_format": "png"}],
+            image_generation_calls=image_calls,
+            instructions_suffix="Use the image_generation tool to generate the requested image.",
+            max_iterations=100,
+        )
+
+        image_call = _latest_completed_image_call(image_calls)
+        if image_call is None:
+            raise HomeAssistantError("No image returned")
+
+        try:
+            image_data = base64.b64decode(image_call.result, validate=True)
+        except (binascii.Error, ValueError) as err:
+            raise HomeAssistantError("Invalid image data returned by Codex") from err
+
+        return ai_task.GenImageTaskResult(
+            image_data=image_data,
+            conversation_id=chat_log.conversation_id,
+            mime_type="image/png",
+            model=self._options.get(CONF_MODEL, DEFAULT_MODEL) or None,
+            revised_prompt=image_call.revised_prompt,
+        )
+
 
 def _format_structure_instruction(task: ai_task.GenDataTask) -> str:
     """Build extra instructions for structured output."""
@@ -161,3 +224,13 @@ def _format_structure_instruction(task: ai_task.GenDataTask) -> str:
     return (
         f"Return only valid JSON. The JSON object must contain these fields: {fields}."
     )
+
+
+def _latest_completed_image_call(
+    image_calls: list[ImageGenerationCall],
+) -> ImageGenerationCall | None:
+    """Return the newest completed image call with result data."""
+    for image_call in reversed(image_calls):
+        if image_call.status == "completed" and image_call.result:
+            return image_call
+    return None
