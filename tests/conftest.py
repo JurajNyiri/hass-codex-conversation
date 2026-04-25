@@ -1,19 +1,33 @@
 """Shared fixtures for the Codex Conversation integration tests."""
+# ruff: noqa: E402,I001
 
 from __future__ import annotations
 
-from types import SimpleNamespace
+import sys
+from types import ModuleType, SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.codex_conversation.const import (
+
+class _TurboJPEGStub:
+    """Minimal turbojpeg stub for Home Assistant camera imports in tests."""
+
+    def decode_header(self, content):
+        raise OSError
+
+
+turbojpeg_stub = ModuleType("turbojpeg")
+setattr(turbojpeg_stub, "TurboJPEG", _TurboJPEGStub)
+sys.modules.setdefault("turbojpeg", turbojpeg_stub)
+
+from custom_components.codex_conversation.const import (  # noqa: E402
     DOMAIN,
     RECOMMENDED_AI_TASK_OPTIONS,
     RECOMMENDED_CONVERSATION_OPTIONS,
 )
-from custom_components.codex_conversation.conversation import CodexConversationEntity
+from custom_components.codex_conversation.conversation import CodexConversationEntity  # noqa: E402
 
 ENTRY_ID = "test_entry_id"
 
