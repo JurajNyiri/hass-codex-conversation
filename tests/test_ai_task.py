@@ -12,6 +12,7 @@ import voluptuous as vol
 
 from custom_components.codex_conversation.ai_task import (
     CodexAITaskEntity,
+    _detect_image_mime_type,
     _format_structure_instruction,
 )
 from custom_components.codex_conversation.codex_api import OutputTextDelta
@@ -97,3 +98,18 @@ def test_format_structure_instruction():
     assert "Return only valid JSON." in instruction
     assert "name" in instruction
     assert "age" in instruction
+
+
+@pytest.mark.parametrize(
+    ("image_data", "mime_type"),
+    [
+        (b"\x89PNG\r\n\x1a\nrest", "image/png"),
+        (b"\xff\xd8\xffrest", "image/jpeg"),
+        (b"RIFF1234WEBPrest", "image/webp"),
+        (b"GIF89arest", "image/gif"),
+        (b"unknown", "application/octet-stream"),
+    ],
+)
+def test_detect_image_mime_type(image_data: bytes, mime_type: str) -> None:
+    """Image MIME detection should use returned bytes, not requested format."""
+    assert _detect_image_mime_type(image_data) == mime_type

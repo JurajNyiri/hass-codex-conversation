@@ -203,10 +203,20 @@ async def sse_iter(resp: aiohttp.ClientResponse) -> AsyncIterator[ResponseEvent]
     Mirrors ``sse_stream`` (codex-client) + ``process_sse`` (codex-api).
     Skips non-``data:`` lines and ``None`` parse results transparently.
     """
-    async for raw_line in resp.content:
-        line = raw_line.decode("utf-8", errors="replace").strip()
-        if not line.startswith("data:"):
-            continue
+    pending = ""
+    async for chunk in resp.content.iter_chunked(64 * 1024):
+        pending += chunk.decode("utf-8", errors="replace")
+        while "\n" in pending:
+            raw_line, pending = pending.split("\n", 1)
+            line = raw_line.strip()
+            if not line.startswith("data:"):
+                continue
+            event = parse_event(line[5:].strip())
+            if event is not None:
+                yield event
+
+    line = pending.strip()
+    if line.startswith("data:"):
         event = parse_event(line[5:].strip())
         if event is not None:
             yield event

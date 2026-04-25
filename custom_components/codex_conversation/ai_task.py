@@ -193,7 +193,7 @@ class CodexAITaskEntity(ai_task.AITaskEntity):
             max_iterations=100,
         )
 
-        image_call = _latest_completed_image_call(image_calls)
+        image_call = _latest_image_call_with_result(image_calls)
         if image_call is None:
             raise HomeAssistantError("No image returned")
 
@@ -205,7 +205,7 @@ class CodexAITaskEntity(ai_task.AITaskEntity):
         return ai_task.GenImageTaskResult(
             image_data=image_data,
             conversation_id=chat_log.conversation_id,
-            mime_type="image/png",
+            mime_type=_detect_image_mime_type(image_data),
             model=self._options.get(CONF_MODEL, DEFAULT_MODEL) or None,
             revised_prompt=image_call.revised_prompt,
         )
@@ -226,11 +226,24 @@ def _format_structure_instruction(task: ai_task.GenDataTask) -> str:
     )
 
 
-def _latest_completed_image_call(
+def _latest_image_call_with_result(
     image_calls: list[ImageGenerationCall],
 ) -> ImageGenerationCall | None:
-    """Return the newest completed image call with result data."""
+    """Return the newest image call with result data."""
     for image_call in reversed(image_calls):
-        if image_call.status == "completed" and image_call.result:
+        if image_call.result:
             return image_call
     return None
+
+
+def _detect_image_mime_type(image_data: bytes) -> str:
+    """Return the image MIME type from magic bytes."""
+    if image_data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    if image_data.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if image_data.startswith(b"RIFF") and image_data[8:12] == b"WEBP":
+        return "image/webp"
+    if image_data.startswith((b"GIF87a", b"GIF89a")):
+        return "image/gif"
+    return "application/octet-stream"
