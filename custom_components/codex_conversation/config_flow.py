@@ -63,20 +63,16 @@ def recommended_options_from_models(
 
 
 def latest_available_model(models: list[CodexModel]) -> CodexModel | None:
-    """Return the highest-priority visible model from model discovery."""
-    visible_models = [
-        model for model in models if model.visibility.lower() not in {"hide", "none"}
-    ]
-    sorted_models = sort_models_by_recommendation(visible_models or models)
-    return sorted_models[0] if sorted_models else None
+    """Return the first visible model in the backend-provided order."""
+    return next(
+        (model for model in models if model.visibility.lower() not in {"hide", "none"}),
+        models[0] if models else None,
+    )
 
 
 def sort_models_by_recommendation(models: list[CodexModel]) -> list[CodexModel]:
-    """Sort models by backend priority, preserving API order as the tiebreaker."""
-    return sorted(
-        models,
-        key=lambda item: -item.priority,
-    )
+    """Preserve the backend-provided model order."""
+    return models
 
 
 def apply_model_capabilities(data: dict[str, Any], model: CodexModel) -> None:

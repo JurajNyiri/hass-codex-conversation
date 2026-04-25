@@ -159,18 +159,18 @@ def test_recommended_options_keep_automatic_when_discovery_has_no_models() -> No
     assert options[CONF_MODEL] == DEFAULT_MODEL
 
 
-def test_latest_available_model_prefers_backend_priority() -> None:
-    """Backend priority should override raw order when provided."""
-    older = CodexModel.from_dict(
-        {"slug": "gpt-older", "visibility": "list", "priority": 1}
+def test_latest_available_model_preserves_backend_order() -> None:
+    """The first visible API model is the maintenance-free default."""
+    first = CodexModel.from_dict(
+        {"slug": "first-model", "visibility": "list", "priority": 0}
     )
-    newer = CodexModel.from_dict(
-        {"slug": "gpt-newer", "visibility": "list", "priority": 10}
+    second = CodexModel.from_dict(
+        {"slug": "second-model", "visibility": "list", "priority": 99}
     )
 
     latest = latest_available_model(
-        [model for model in [older, newer] if model is not None]
+        [model for model in [first, second] if model is not None]
     )
 
     assert latest is not None
-    assert latest.slug == "gpt-newer"
+    assert latest.slug == "first-model"

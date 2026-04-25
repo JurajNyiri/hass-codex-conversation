@@ -64,7 +64,7 @@ After setup, you can change options from **Settings -> Devices & Services -> Ope
 
 ### Available Models
 
-The advanced settings model picker is populated from `https://chatgpt.com/backend-api/codex/models` using your OAuth session. Availability depends on your ChatGPT subscription, account, workspace, and OpenAI rollout status. Recommended settings use the highest-priority visible model returned by the API, preserving API order when no priority is provided. If the model list cannot be fetched, the integration omits the model field so the Codex backend can use its own current default.
+The advanced settings model picker is populated from `https://chatgpt.com/backend-api/codex/models` using your OAuth session. Availability depends on your ChatGPT subscription, account, workspace, and OpenAI rollout status. Recommended settings use the first visible model returned by the API, preserving the backend-provided order. If the model list cannot be fetched, the integration omits the model field so the Codex backend can use its own current default.
 
 ## How It Works
 
