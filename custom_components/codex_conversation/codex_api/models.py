@@ -11,6 +11,75 @@ from dataclasses import dataclass, field
 from typing import Any, Union
 
 
+@dataclass(frozen=True)
+class CodexModel:
+    """Model metadata returned by the Codex model-discovery endpoint."""
+
+    slug: str
+    display_name: str = ""
+    description: str = ""
+    visibility: str = ""
+    supported_in_api: bool | None = None
+    priority: int = 0
+    supported_reasoning_levels: tuple[str, ...] = ()
+    default_reasoning_level: str | None = None
+    supports_reasoning_summaries: bool | None = None
+    support_verbosity: bool | None = None
+    default_verbosity: str | None = None
+    capabilities_known: bool = False
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "CodexModel | None":
+        """Build a model entry from the loose upstream JSON shape."""
+        if not isinstance(data, dict):
+            return None
+
+        slug = data.get("slug") or data.get("id") or data.get("model")
+        if not isinstance(slug, str) or not slug:
+            return None
+
+        reasoning_levels = []
+        for level in data.get("supported_reasoning_levels") or []:
+            if isinstance(level, dict) and isinstance(level.get("effort"), str):
+                reasoning_levels.append(level["effort"])
+            elif isinstance(level, str):
+                reasoning_levels.append(level)
+
+        return cls(
+            slug=slug,
+            display_name=str(
+                data.get("display_name") or data.get("displayName") or slug
+            ),
+            description=str(data.get("description") or ""),
+            visibility=str(data.get("visibility") or ""),
+            supported_in_api=_bool_or_none(data.get("supported_in_api")),
+            priority=_int_or_default(data.get("priority")),
+            supported_reasoning_levels=tuple(reasoning_levels),
+            default_reasoning_level=data.get("default_reasoning_level"),
+            supports_reasoning_summaries=_bool_or_none(
+                data.get("supports_reasoning_summaries")
+            ),
+            support_verbosity=_bool_or_none(data.get("support_verbosity")),
+            default_verbosity=data.get("default_verbosity"),
+            capabilities_known=True,
+        )
+
+    @property
+    def supports_reasoning(self) -> bool:
+        """Return whether the endpoint says this model supports reasoning controls."""
+        return bool(self.supported_reasoning_levels)
+
+
+def _bool_or_none(value: Any) -> bool | None:
+    """Return booleans from loose JSON without treating missing values as false."""
+    return value if isinstance(value, bool) else None
+
+
+def _int_or_default(value: Any) -> int:
+    """Return integer metadata from loose JSON."""
+    return value if isinstance(value, int) else 0
+
+
 @dataclass
 class ResponseCreated:
     """Response object has been created; stream is starting."""

@@ -25,9 +25,13 @@ from homeassistant.helpers.selector import (
 )
 import voluptuous as vol
 
+from .codex_api import CODEX_ENDPOINT, CodexAuth, CodexClient, CodexModel
 from .codex_api.auth import VERIFICATION_URL, CodexDeviceFlow, OAuthToken
 from .const import (
     CONF_MODEL,
+    CONF_MODEL_SUPPORTS_REASONING,
+    CONF_MODEL_SUPPORTS_REASONING_SUMMARIES,
+    CONF_MODEL_SUPPORTS_TEXT_VERBOSITY,
     CONF_PROMPT,
     CONF_REASONING_EFFORT,
     CONF_REASONING_SUMMARY,
@@ -35,15 +39,51 @@ from .const import (
     CONF_TEXT_VERBOSITY,
     DEFAULT_MODEL,
     DOMAIN,
-    MODELS,
     RECOMMENDED_AI_TASK_OPTIONS,
     RECOMMENDED_CONVERSATION_OPTIONS,
     RECOMMENDED_REASONING_EFFORT,
     RECOMMENDED_REASONING_SUMMARY,
     RECOMMENDED_TEXT_VERBOSITY,
 )
+from .oauth import CodexHAAuth
 
 _LOGGER = logging.getLogger(__name__)
+AUTO_MODEL_LABEL = "Automatic (Codex default)"
+
+
+def recommended_options_from_models(
+    defaults: dict[str, Any], models: list[CodexModel]
+) -> dict[str, Any]:
+    """Return recommended options using live model discovery when available."""
+    data = defaults.copy()
+    if model := latest_available_model(models):
+        data[CONF_MODEL] = model.slug
+        apply_model_capabilities(data, model)
+    return data
+
+
+def latest_available_model(models: list[CodexModel]) -> CodexModel | None:
+    """Return the highest-priority visible model from model discovery."""
+    visible_models = [
+        model for model in models if model.visibility.lower() not in {"hide", "none"}
+    ]
+    sorted_models = sort_models_by_recommendation(visible_models or models)
+    return sorted_models[0] if sorted_models else None
+
+
+def sort_models_by_recommendation(models: list[CodexModel]) -> list[CodexModel]:
+    """Sort models by backend priority, preserving API order as the tiebreaker."""
+    return sorted(
+        models,
+        key=lambda item: -item.priority,
+    )
+
+
+def apply_model_capabilities(data: dict[str, Any], model: CodexModel) -> None:
+    """Persist selected model capabilities for request serialization."""
+    data[CONF_MODEL_SUPPORTS_REASONING] = model.supports_reasoning
+    data[CONF_MODEL_SUPPORTS_REASONING_SUMMARIES] = model.supports_reasoning_summaries
+    data[CONF_MODEL_SUPPORTS_TEXT_VERBOSITY] = model.support_verbosity
 
 
 class CodexConversationConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -110,24 +150,47 @@ class CodexConversationConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Create entry with auth data only and default subentries."""
+        models = await self._async_get_initial_models()
+
         return self.async_create_entry(
             title="OpenAI Codex",
             data={"auth_implementation": DOMAIN, "token": self._token.as_dict()},
             subentries=[
                 {
                     "subentry_type": "conversation",
-                    "data": RECOMMENDED_CONVERSATION_OPTIONS,
+                    "data": recommended_options_from_models(
+                        RECOMMENDED_CONVERSATION_OPTIONS, models
+                    ),
                     "title": "Codex Conversation",
                     "unique_id": None,
                 },
                 {
                     "subentry_type": "ai_task_data",
-                    "data": RECOMMENDED_AI_TASK_OPTIONS,
+                    "data": recommended_options_from_models(
+                        RECOMMENDED_AI_TASK_OPTIONS, models
+                    ),
                     "title": "Codex AI Task",
                     "unique_id": None,
                 },
             ],
         )
+
+    async def _async_get_initial_models(self) -> list[CodexModel]:
+        """Fetch live models after OAuth so initial entries use the latest model."""
+        if self._token is None:
+            return []
+
+        try:
+            auth = CodexAuth(
+                async_get_clientsession(self.hass),
+                CODEX_ENDPOINT,
+                self._token.access_token,
+                self._token.account_id,
+            )
+            return await CodexClient(auth).list_models()
+        except Exception:
+            _LOGGER.exception("Failed to fetch initial Codex models")
+            return []
 
     @classmethod
     @callback
@@ -146,6 +209,7 @@ class _BaseCodexSubentryFlow(ConfigSubentryFlow):
 
     options: dict[str, Any]
     _init_data: dict[str, Any]
+    _models: list[CodexModel]
 
     @property
     def _is_new(self) -> bool:
@@ -168,6 +232,7 @@ class _BaseCodexSubentryFlow(ConfigSubentryFlow):
         """Handle creation of a new subentry."""
         self.options = self._default_data.copy()
         self._init_data = {}
+        self._models = []
         return await self.async_step_init()
 
     async def async_step_reconfigure(
@@ -176,6 +241,7 @@ class _BaseCodexSubentryFlow(ConfigSubentryFlow):
         """Handle reconfiguration of an existing subentry."""
         self.options = self._get_reconfigure_subentry().data.copy()
         self._init_data = {}
+        self._models = []
         return await self.async_step_init()
 
     async def async_step_init(
@@ -189,7 +255,7 @@ class _BaseCodexSubentryFlow(ConfigSubentryFlow):
 
         if user_input is not None:
             if user_input[CONF_RECOMMENDED]:
-                data = self._default_data.copy()
+                data = await self._async_recommended_data()
                 if self._supports_prompt_and_apis:
                     data[CONF_PROMPT] = user_input.get(
                         CONF_PROMPT, llm.DEFAULT_INSTRUCTIONS_PROMPT
@@ -239,8 +305,13 @@ class _BaseCodexSubentryFlow(ConfigSubentryFlow):
         options = self.options
 
         if user_input is not None:
-            data = {**self._init_data, **user_input}
+            data = self._with_model_capabilities({**self._init_data, **user_input})
             return self._finalize_subentry(data)
+
+        models = await self._async_get_models()
+        if not options.get(CONF_MODEL) and (model := latest_available_model(models)):
+            options[CONF_MODEL] = model.slug
+        model_options = self._model_selector_options(models)
 
         return self.async_show_form(
             step_id="advanced",
@@ -249,7 +320,7 @@ class _BaseCodexSubentryFlow(ConfigSubentryFlow):
                     vol.Required(
                         CONF_MODEL,
                         default=options.get(CONF_MODEL, DEFAULT_MODEL),
-                    ): SelectSelector(SelectSelectorConfig(options=list(MODELS))),
+                    ): SelectSelector(SelectSelectorConfig(options=model_options)),
                     vol.Required(
                         CONF_REASONING_EFFORT,
                         default=options.get(
@@ -280,10 +351,87 @@ class _BaseCodexSubentryFlow(ConfigSubentryFlow):
             ),
         )
 
+    async def _async_recommended_data(self) -> dict[str, Any]:
+        """Return recommended data using the latest available account model."""
+        data = self._default_data.copy()
+        models = await self._async_get_models()
+        if model := latest_available_model(models):
+            data[CONF_MODEL] = model.slug
+        return self._with_model_capabilities(data)
+
+    async def _async_get_models(self) -> list[CodexModel]:
+        """Fetch live model metadata, falling back to the bundled defaults."""
+        models = getattr(self, "_models", [])
+        if models:
+            return models
+        self._models = []
+
+        entry = self._get_entry()
+        oauth_session = self.hass.data.get(DOMAIN, {}).get(entry.entry_id)
+        if oauth_session is not None:
+            try:
+                auth = CodexHAAuth(
+                    session=async_get_clientsession(self.hass),
+                    oauth_session=oauth_session,
+                )
+                self._models = await CodexClient(auth).list_models()
+            except Exception:
+                _LOGGER.exception("Failed to fetch Codex models; using fallback list")
+
+        if not self._models:
+            return []
+
+        return self._models
+
+    def _model_selector_options(self, models: list[CodexModel]) -> list[dict[str, str]]:
+        """Build selector options and preserve the currently configured model."""
+        current = self.options.get(CONF_MODEL, DEFAULT_MODEL)
+        by_slug = {model.slug: model for model in models}
+        if current and current not in by_slug:
+            by_slug[current] = CodexModel(slug=current, display_name=current)
+
+        visible_models = [
+            model
+            for model in by_slug.values()
+            if model.slug == current or model.visibility.lower() not in {"hide", "none"}
+        ]
+
+        options = [
+            {"value": model.slug, "label": model.display_name or model.slug}
+            for model in sort_models_by_recommendation(visible_models)
+        ]
+        if not current:
+            return [{"value": DEFAULT_MODEL, "label": AUTO_MODEL_LABEL}, *options]
+        return options or [{"value": DEFAULT_MODEL, "label": AUTO_MODEL_LABEL}]
+
+    def _with_model_capabilities(self, data: dict[str, Any]) -> dict[str, Any]:
+        """Persist selected model capabilities for request serialization."""
+        model = next(
+            (
+                item
+                for item in getattr(self, "_models", [])
+                if item.slug == data.get(CONF_MODEL)
+            ),
+            None,
+        )
+        if model is None:
+            return data
+        if not model.capabilities_known:
+            for key in (
+                CONF_MODEL_SUPPORTS_REASONING,
+                CONF_MODEL_SUPPORTS_REASONING_SUMMARIES,
+                CONF_MODEL_SUPPORTS_TEXT_VERBOSITY,
+            ):
+                data.pop(key, None)
+            return data
+
+        apply_model_capabilities(data, model)
+        return data
+
     def _finalize_subentry(self, data: dict[str, Any]) -> SubentryFlowResult:
         """Create or update subentry depending on source."""
         model = data.get(CONF_MODEL, DEFAULT_MODEL)
-        title = f"Codex ({model})"
+        title = f"Codex ({model or AUTO_MODEL_LABEL})"
 
         if self._is_new:
             return self.async_create_entry(title=title, data=data)

@@ -10,14 +10,17 @@ Mirrors ``ResponsesClient`` from codex-api/src/endpoint/responses.rs.
 from __future__ import annotations
 
 from typing import AsyncIterator
+from urllib.parse import urlencode
 
 from .auth import AbstractAuth
 from .errors import CodexApiError, CodexRateLimited, CodexServerOverloaded
-from .models import ResponseEvent
+from .models import CodexModel, ResponseEvent
 from .requests import CodexRequest
 from .sse import sse_iter
 
 CODEX_ENDPOINT = "https://chatgpt.com/backend-api/codex/responses"
+CODEX_MODELS_ENDPOINT = "https://chatgpt.com/backend-api/codex/models"
+CODEX_CLIENT_VERSION = "1.0.0"
 
 _STREAM_HEADERS = {
     "Content-Type": "application/json",
@@ -80,5 +83,29 @@ class CodexClient:
 
             async for event in sse_iter(resp):
                 yield event
+        finally:
+            resp.release()
+
+    async def list_models(self) -> list[CodexModel]:
+        """Return models available to the authenticated ChatGPT/Codex account."""
+        endpoint = f"{CODEX_MODELS_ENDPOINT}?{urlencode({'client_version': CODEX_CLIENT_VERSION})}"
+        resp = await self._auth.request(
+            "get",
+            endpoint=endpoint,
+            headers={"Accept": "application/json"},
+        )
+        try:
+            if resp.status == 401:
+                raise CodexApiError(
+                    401, "Unauthorized — bearer token expired or invalid"
+                )
+            if resp.status >= 400:
+                raise CodexApiError(resp.status, await resp.text())
+
+            data = await resp.json()
+            models = data.get("models") if isinstance(data, dict) else None
+            if not isinstance(models, list):
+                return []
+            return [model for item in models if (model := CodexModel.from_dict(item))]
         finally:
             resp.release()

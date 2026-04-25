@@ -4,7 +4,7 @@ A [Home Assistant](https://www.home-assistant.io/) custom integration that bring
 
 ## The Idea
 
-OpenAI's **Codex CLI** is a developer tool that lets you use powerful reasoning models such as `gpt-5.1-codex` and `gpt-5.3-codex` directly from the terminal.
+OpenAI's **Codex CLI** is a developer tool that lets you use powerful reasoning models directly from the terminal.
 Access to these models is included in a ChatGPT Plus or Pro subscription, so there is no separate OpenAI API key and no per-token billing on top of that subscription.
 
 This integration reuses the same authenticated Codex backend flow and exposes it as a native Home Assistant conversation agent.
@@ -13,7 +13,7 @@ This integration reuses the same authenticated Codex backend flow and exposes it
 
 - No API key required, authentication happens with your existing ChatGPT account through OAuth2 device flow.
 - Streaming responses, so text appears progressively in the Home Assistant conversation UI.
-- Support for the `gpt-5.*-codex` model family.
+- Support for the models available to your account through the Codex OAuth backend.
 - Multi-turn conversations with full chat history.
 - Home Assistant Assist integration.
 - Automatic token refresh.
@@ -60,16 +60,11 @@ After setup, you can change options from **Settings -> Devices & Services -> Ope
 
 | Option | Description | Default |
 | --- | --- | --- |
-| Model | Codex model used for the conversation agent | `gpt-5.1-codex` |
+| Model | Model used for the conversation agent. The list is loaded from your account through the Codex OAuth backend. | Latest available account model, or Codex backend default if discovery is unavailable |
 
 ### Available Models
 
-| Model | Notes |
-| --- | --- |
-| `gpt-5.1-codex` | Balanced speed and reasoning |
-| `gpt-5.2-codex` | More capable reasoning |
-| `gpt-5.3-codex` | Most capable |
-| `gpt-5.1-codex-mini` | Faster and lighter |
+The advanced settings model picker is populated from `https://chatgpt.com/backend-api/codex/models` using your OAuth session. Availability depends on your ChatGPT subscription, account, workspace, and OpenAI rollout status. Recommended settings use the highest-priority visible model returned by the API, preserving API order when no priority is provided. If the model list cannot be fetched, the integration omits the model field so the Codex backend can use its own current default.
 
 ## How It Works
 

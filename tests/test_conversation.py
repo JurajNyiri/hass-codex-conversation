@@ -334,7 +334,7 @@ async def test_handle_message_uses_model_from_options(hass, mock_oauth_session):
         subentry_id="conversation_subentry_id",
         title="Codex Conversation",
         subentry_type="conversation",
-        data={CONF_MODEL: "gpt-5.3-codex"},
+        data={CONF_MODEL: "selected-model"},
     )
     entity = CodexConversationEntity(hass, entry, mock_oauth_session, subentry)
     entity.entity_id = "conversation.test"
@@ -365,7 +365,7 @@ async def test_handle_message_uses_model_from_options(hass, mock_oauth_session):
         await entity._async_handle_message(user_input, chat_log)
 
     assert len(captured) == 1
-    assert captured[0].model == "gpt-5.3-codex"
+    assert captured[0].model == "selected-model"
 
 
 @pytest.mark.parametrize(
@@ -502,7 +502,7 @@ async def test_async_run_chat_log_appends_attachment_items(tmp_path):
     await async_run_chat_log(
         chat_log=chat_log,
         client=_Client(),
-        model="gpt-5.1-codex",
+        model="selected-model",
         entity_id="conversation.codex",
         reasoning_effort="medium",
         reasoning_summary="auto",

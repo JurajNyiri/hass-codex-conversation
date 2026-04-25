@@ -5,13 +5,6 @@ from homeassistant.helpers import llm
 
 DOMAIN = "codex_conversation"
 
-MODELS = [
-    "gpt-5.1-codex",
-    "gpt-5.2-codex",
-    "gpt-5.3-codex",
-    "gpt-5.1-codex-mini",
-]
-
 # Options keys
 CONF_MODEL = "model"
 CONF_RECOMMENDED = "recommended"
@@ -19,9 +12,12 @@ CONF_PROMPT = "prompt"
 CONF_REASONING_EFFORT = "reasoning_effort"
 CONF_REASONING_SUMMARY = "reasoning_summary"
 CONF_TEXT_VERBOSITY = "text_verbosity"
+CONF_MODEL_SUPPORTS_REASONING = "model_supports_reasoning"
+CONF_MODEL_SUPPORTS_REASONING_SUMMARIES = "model_supports_reasoning_summaries"
+CONF_MODEL_SUPPORTS_TEXT_VERBOSITY = "model_supports_text_verbosity"
 
 # Defaults
-DEFAULT_MODEL = "gpt-5.1-codex"
+DEFAULT_MODEL = ""
 RECOMMENDED_REASONING_EFFORT = "medium"
 RECOMMENDED_REASONING_SUMMARY = "auto"
 RECOMMENDED_TEXT_VERBOSITY = "medium"

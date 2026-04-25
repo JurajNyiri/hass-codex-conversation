@@ -26,7 +26,7 @@ from .auth import (
     DeviceCodeInfo,
     OAuthToken,
 )
-from .client import CODEX_ENDPOINT, CodexClient
+from .client import CODEX_ENDPOINT, CODEX_MODELS_ENDPOINT, CodexClient
 from .errors import (
     CodexApiError,
     CodexContextWindowExceeded,
@@ -38,6 +38,7 @@ from .errors import (
     CodexUsageNotIncluded,
 )
 from .models import (
+    CodexModel,
     FunctionCallAdded,
     FunctionCallArgumentsDelta,
     FunctionCallArgumentsDone,
@@ -65,6 +66,7 @@ __all__ = [
     "OAuthToken",
     # client
     "CODEX_ENDPOINT",
+    "CODEX_MODELS_ENDPOINT",
     "CodexClient",
     # errors
     "CodexError",
@@ -76,6 +78,7 @@ __all__ = [
     "CodexServerOverloaded",
     "CodexStreamError",
     # models
+    "CodexModel",
     "ResponseCreated",
     "OutputItemAdded",
     "OutputTextDelta",

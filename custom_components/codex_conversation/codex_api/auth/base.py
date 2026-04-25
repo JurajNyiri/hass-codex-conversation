@@ -41,7 +41,9 @@ class AbstractAuth(ABC):
         """Return the OpenAI account / organisation ID (may be empty)."""
         return ""
 
-    async def request(self, method: str, **kwargs: object) -> aiohttp.ClientResponse:
+    async def request(
+        self, method: str, endpoint: str | None = None, **kwargs: object
+    ) -> aiohttp.ClientResponse:
         """Make an authenticated request to the Codex endpoint.
 
         Injects ``Authorization``, ``openai-beta``, ``openai-originator``, and
@@ -60,10 +62,11 @@ class AbstractAuth(ABC):
         }
         if account_id:
             headers["openai-organization"] = account_id
+            headers["ChatGPT-Account-ID"] = account_id
 
         return await self._session.request(
             method,
-            self._endpoint,
+            endpoint or self._endpoint,
             headers=headers,
             **kwargs,  # type: ignore[arg-type]
         )

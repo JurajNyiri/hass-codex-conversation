@@ -45,6 +45,9 @@ from .codex_api import (
 )
 from .const import (
     CONF_MODEL,
+    CONF_MODEL_SUPPORTS_REASONING,
+    CONF_MODEL_SUPPORTS_REASONING_SUMMARIES,
+    CONF_MODEL_SUPPORTS_TEXT_VERBOSITY,
     CONF_PROMPT,
     CONF_REASONING_EFFORT,
     CONF_REASONING_SUMMARY,
@@ -114,7 +117,7 @@ class CodexConversationEntity(ConversationEntity):
             identifiers={(DOMAIN, subentry.subentry_id)},
             name=subentry.title,
             manufacturer="OpenAI",
-            model=self._options.get(CONF_MODEL, DEFAULT_MODEL),
+            model=self._options.get(CONF_MODEL, DEFAULT_MODEL) or "Automatic",
             entry_type=dr.DeviceEntryType.SERVICE,
         )
 
@@ -182,6 +185,13 @@ class CodexConversationEntity(ConversationEntity):
             text_verbosity=self._options.get(
                 CONF_TEXT_VERBOSITY, RECOMMENDED_TEXT_VERBOSITY
             ),
+            supports_reasoning=self._options.get(CONF_MODEL_SUPPORTS_REASONING),
+            supports_reasoning_summaries=self._options.get(
+                CONF_MODEL_SUPPORTS_REASONING_SUMMARIES
+            ),
+            supports_text_verbosity=self._options.get(
+                CONF_MODEL_SUPPORTS_TEXT_VERBOSITY
+            ),
             error_cls=ConverseError,
         )
 
@@ -197,6 +207,9 @@ async def async_run_chat_log(
     reasoning_effort: str,
     reasoning_summary: str,
     text_verbosity: str,
+    supports_reasoning: bool | None = None,
+    supports_reasoning_summaries: bool | None = None,
+    supports_text_verbosity: bool | None = None,
     max_iterations: int = MAX_TOOL_ITERATIONS,
     instructions_suffix: str = "",
     error_cls: type[Exception] = HomeAssistantError,
@@ -235,6 +248,9 @@ async def async_run_chat_log(
             reasoning_effort=reasoning_effort,
             reasoning_summary=reasoning_summary,
             text_verbosity=text_verbosity,
+            supports_reasoning=supports_reasoning,
+            supports_reasoning_summaries=supports_reasoning_summaries,
+            supports_text_verbosity=supports_text_verbosity,
         )
 
         try:
