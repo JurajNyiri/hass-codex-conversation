@@ -281,6 +281,45 @@ def test_format_tool_empty_description():
     assert result["description"] == ""
 
 
+def test_format_tool_selectors():
+    """Home Assistant selectors use the LLM API's schema serializer."""
+    import voluptuous as vol
+
+    from homeassistant.helpers.selector import (
+        SelectSelector,
+        SelectSelectorConfig,
+        TextSelector,
+        TextSelectorConfig,
+    )
+
+    tool = MagicMock(spec=llm.Tool)
+    tool.name = "set_mode"
+    tool.description = "Set one or more modes"
+    tool.parameters = vol.Schema(
+        {
+            vol.Required("modes"): SelectSelector(
+                SelectSelectorConfig(
+                    options=[
+                        {"value": "heat", "label": "Heat"},
+                        {"value": "cool", "label": "Cool"},
+                    ],
+                    multiple=True,
+                )
+            ),
+            vol.Required("message"): TextSelector(TextSelectorConfig(multiline=True)),
+        }
+    )
+
+    result = format_tool(tool, custom_serializer=llm.selector_serializer)
+
+    assert result["parameters"]["properties"]["modes"] == {
+        "type": "array",
+        "items": {"type": "string", "enum": ["heat", "cool"]},
+        "uniqueItems": True,
+    }
+    assert result["parameters"]["properties"]["message"] == {"type": "string"}
+
+
 # ── _async_handle_message — integration ───────────────────────────────────────
 
 

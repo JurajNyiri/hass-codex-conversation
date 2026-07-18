@@ -218,7 +218,14 @@ async def async_run_chat_log(
     error_cls: type[Exception] = HomeAssistantError,
 ) -> None:
     """Execute a ChatLog against the Codex Responses API."""
-    tools = [format_tool(t) for t in chat_log.llm_api.tools] if chat_log.llm_api else []
+    tools = (
+        [
+            format_tool(t, custom_serializer=chat_log.llm_api.custom_serializer)
+            for t in chat_log.llm_api.tools
+        ]
+        if chat_log.llm_api
+        else []
+    )
     if extra_tools:
         tools.extend(extra_tools)
     instructions = extract_instructions(chat_log)
