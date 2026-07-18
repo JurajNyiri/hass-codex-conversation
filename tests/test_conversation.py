@@ -33,7 +33,10 @@ from custom_components.codex_conversation.const import (
     CONF_MODEL,
     DOMAIN,
 )
-from custom_components.codex_conversation.conversation import async_run_chat_log
+from custom_components.codex_conversation.conversation import (
+    _async_call_tool_with_error_result,
+    async_run_chat_log,
+)
 from custom_components.codex_conversation.transform import (
     build_input_items,
     extract_instructions,
@@ -318,6 +321,26 @@ def test_format_tool_selectors():
         "uniqueItems": True,
     }
     assert result["parameters"]["properties"]["message"] == {"type": "string"}
+
+
+# ── tool execution errors ─────────────────────────────────────────────────────
+
+
+async def test_tool_runtime_error_is_returned_to_model():
+    """Unexpected integration errors become structured tool results."""
+    call_tool = AsyncMock(side_effect=RuntimeError("Error: No active player."))
+    tool_input = llm.ToolInput(
+        id="call-1",
+        tool_name="llm_script_for_music_assistant_voice_requests",
+        tool_args={"media_id": "Crocodilo"},
+    )
+
+    result = await _async_call_tool_with_error_result(call_tool, tool_input)
+
+    assert result == {
+        "error": "RuntimeError",
+        "error_text": "Error: No active player.",
+    }
 
 
 # ── _async_handle_message — integration ───────────────────────────────────────

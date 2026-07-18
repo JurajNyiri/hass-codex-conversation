@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Awaitable, Callable
+from functools import partial
 import json
 import logging
 from typing import Literal
@@ -218,6 +219,12 @@ async def async_run_chat_log(
     error_cls: type[Exception] = HomeAssistantError,
 ) -> None:
     """Execute a ChatLog against the Codex Responses API."""
+    if chat_log.llm_api:
+        chat_log.llm_api.async_call_tool = partial(  # type: ignore[method-assign]
+            _async_call_tool_with_error_result,
+            chat_log.llm_api.async_call_tool,
+        )
+
     tools = (
         [
             format_tool(t, custom_serializer=chat_log.llm_api.custom_serializer)
@@ -293,6 +300,26 @@ async def async_run_chat_log(
 
         if not chat_log.unresponded_tool_results:
             break
+
+
+async def _async_call_tool_with_error_result(
+    call_tool: Callable[[llm.ToolInput], Awaitable[dict]],
+    tool_input: llm.ToolInput,
+) -> dict:
+    """Return tool execution exceptions to the model as tool results."""
+    try:
+        return await call_tool(tool_input)
+    except Exception as err:  # noqa: BLE001 - tools may raise integration exceptions
+        _LOGGER.warning(
+            "Tool %s failed: %s: %s",
+            tool_input.tool_name,
+            type(err).__name__,
+            err,
+        )
+        result = {"error": type(err).__name__}
+        if error_text := str(err):
+            result["error_text"] = error_text
+        return result
 
 
 # ── Streaming helpers ──────────────────────────────────────────────────────────
