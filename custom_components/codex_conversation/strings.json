@@ -50,12 +50,14 @@
             "model": "Model",
             "reasoning_effort": "Reasoning effort",
             "reasoning_summary": "Reasoning summary",
-            "text_verbosity": "Text verbosity"
+            "text_verbosity": "Text verbosity",
+            "service_tier": "Speed"
           },
           "data_description": {
             "reasoning_effort": "How many reasoning tokens the model should generate before responding.",
             "reasoning_summary": "Controls the length and detail of the reasoning summary.",
-            "text_verbosity": "Controls the verbosity of the model's text output."
+            "text_verbosity": "Controls the verbosity of the model's text output.",
+            "service_tier": "Select a speed tier advertised for your account. Faster tiers may consume more usage."
           }
         }
       }
@@ -82,12 +84,14 @@
             "model": "[%key:component::codex_conversation::config_subentries::conversation::step::advanced::data::model%]",
             "reasoning_effort": "[%key:component::codex_conversation::config_subentries::conversation::step::advanced::data::reasoning_effort%]",
             "reasoning_summary": "[%key:component::codex_conversation::config_subentries::conversation::step::advanced::data::reasoning_summary%]",
-            "text_verbosity": "[%key:component::codex_conversation::config_subentries::conversation::step::advanced::data::text_verbosity%]"
+            "text_verbosity": "[%key:component::codex_conversation::config_subentries::conversation::step::advanced::data::text_verbosity%]",
+            "service_tier": "[%key:component::codex_conversation::config_subentries::conversation::step::advanced::data::service_tier%]"
           },
           "data_description": {
             "reasoning_effort": "[%key:component::codex_conversation::config_subentries::conversation::step::advanced::data_description::reasoning_effort%]",
             "reasoning_summary": "[%key:component::codex_conversation::config_subentries::conversation::step::advanced::data_description::reasoning_summary%]",
-            "text_verbosity": "[%key:component::codex_conversation::config_subentries::conversation::step::advanced::data_description::text_verbosity%]"
+            "text_verbosity": "[%key:component::codex_conversation::config_subentries::conversation::step::advanced::data_description::text_verbosity%]",
+            "service_tier": "[%key:component::codex_conversation::config_subentries::conversation::step::advanced::data_description::service_tier%]"
           }
         }
       }
@@ -98,7 +102,10 @@
       "options": {
         "low": "[%key:common::state::low%]",
         "medium": "[%key:common::state::medium%]",
-        "high": "[%key:common::state::high%]"
+        "high": "[%key:common::state::high%]",
+        "xhigh": "Very high",
+        "max": "Maximum",
+        "ultra": "Ultra"
       }
     },
     "reasoning_summary": {

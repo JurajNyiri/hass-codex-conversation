@@ -24,11 +24,13 @@ from .const import (
     CONF_MODEL_SUPPORTS_TEXT_VERBOSITY,
     CONF_REASONING_EFFORT,
     CONF_REASONING_SUMMARY,
+    CONF_SERVICE_TIER,
     CONF_TEXT_VERBOSITY,
     DEFAULT_MODEL,
     DOMAIN,
     RECOMMENDED_REASONING_EFFORT,
     RECOMMENDED_REASONING_SUMMARY,
+    RECOMMENDED_SERVICE_TIER,
     RECOMMENDED_TEXT_VERBOSITY,
 )
 from .conversation import async_run_chat_log
@@ -119,6 +121,9 @@ class CodexAITaskEntity(ai_task.AITaskEntity):
             text_verbosity=self._options.get(
                 CONF_TEXT_VERBOSITY, RECOMMENDED_TEXT_VERBOSITY
             ),
+            service_tier=self._options.get(
+                CONF_SERVICE_TIER, RECOMMENDED_SERVICE_TIER
+            ),
             supports_reasoning=self._options.get(CONF_MODEL_SUPPORTS_REASONING),
             supports_reasoning_summaries=self._options.get(
                 CONF_MODEL_SUPPORTS_REASONING_SUMMARIES
@@ -179,6 +184,9 @@ class CodexAITaskEntity(ai_task.AITaskEntity):
             ),
             text_verbosity=self._options.get(
                 CONF_TEXT_VERBOSITY, RECOMMENDED_TEXT_VERBOSITY
+            ),
+            service_tier=self._options.get(
+                CONF_SERVICE_TIER, RECOMMENDED_SERVICE_TIER
             ),
             supports_reasoning=self._options.get(CONF_MODEL_SUPPORTS_REASONING),
             supports_reasoning_summaries=self._options.get(

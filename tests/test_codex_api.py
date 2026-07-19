@@ -13,7 +13,9 @@ from custom_components.codex_conversation.codex_api.models import CodexModel
 from custom_components.codex_conversation.codex_api.sse import parse_event
 from custom_components.codex_conversation.config_flow import (
     latest_available_model,
+    reasoning_selector_options,
     recommended_options_from_models,
+    service_tier_selector_options,
 )
 from custom_components.codex_conversation.const import CONF_MODEL, DEFAULT_MODEL
 
@@ -60,10 +62,15 @@ async def test_list_models_parses_available_models() -> None:
                     "slug": "gpt-current",
                     "display_name": "GPT Current",
                     "supported_reasoning_levels": [{"effort": "medium"}],
+                    "default_reasoning_level": "medium",
                     "supports_reasoning_summaries": True,
                     "support_verbosity": True,
                     "supported_in_api": True,
                     "priority": 10,
+                    "service_tiers": [
+                        {"id": "priority", "name": "Fast", "description": "Faster"}
+                    ],
+                    "default_service_tier": "priority",
                 },
                 {"slug": "non-reasoning-model", "display_name": "Non Reasoning"},
             ]
@@ -81,6 +88,9 @@ async def test_list_models_parses_available_models() -> None:
     assert models[0].support_verbosity is True
     assert models[0].supported_in_api is True
     assert models[0].priority == 10
+    assert models[0].service_tiers[0].id == "priority"
+    assert models[0].service_tiers[0].name == "Fast"
+    assert models[0].default_service_tier == "priority"
     assert auth.calls[0]["method"] == "get"
     assert "/backend-api/codex/models" in auth.calls[0]["endpoint"]
     assert response.released is True
@@ -136,6 +146,42 @@ def test_request_keeps_prefix_fallback_without_capabilities() -> None:
     assert body["reasoning"] == {"effort": "medium", "summary": "auto"}
     assert body["text"] == {"verbosity": "medium"}
     assert body["include"] == ["reasoning.encrypted_content"]
+
+
+def test_request_serializes_non_default_service_tier() -> None:
+    """A selected catalog speed tier should be sent to the backend."""
+    body = CodexRequest(
+        model="gpt-5", input=[], service_tier="priority"
+    ).to_body()
+
+    assert body["service_tier"] == "priority"
+
+
+def test_dynamic_catalog_selector_options() -> None:
+    """Reasoning and speed choices should come from live model metadata."""
+    model = CodexModel.from_dict(
+        {
+            "slug": "gpt-future",
+            "supported_reasoning_levels": [
+                {"effort": "low"},
+                {"effort": "xhigh"},
+                {"effort": "ultra"},
+            ],
+            "service_tiers": [{"id": "priority", "name": "Fast"}],
+        }
+    )
+    assert model is not None
+
+    assert reasoning_selector_options([model], "medium") == [
+        "low",
+        "xhigh",
+        "ultra",
+        "medium",
+    ]
+    assert service_tier_selector_options([model], "default") == [
+        {"value": "default", "label": "Standard"},
+        {"value": "priority", "label": "Fast"},
+    ]
 
 
 def test_recommended_options_use_first_visible_api_model_without_priority() -> None:

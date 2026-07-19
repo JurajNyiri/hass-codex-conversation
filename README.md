@@ -61,10 +61,14 @@ After setup, you can change options from **Settings -> Devices & Services -> Ope
 | Option | Description | Default |
 | --- | --- | --- |
 | Model | Model used for the conversation agent. The list is loaded from your account through the Codex OAuth backend. | Latest available account model, or Codex backend default if discovery is unavailable |
+| Reasoning effort | Reasoning levels supported by the models available to your account. The choices are loaded dynamically from the Codex model catalog. | Model catalog default |
+| Reasoning summary | Controls the reasoning summary returned by the model. | Auto |
+| Text verbosity | Controls how concise or detailed the response text is. | Model catalog default |
+| Speed | Service tiers advertised for your account, such as Fast. Faster tiers may consume more subscription usage. | Standard |
 
 ### Available Models
 
-The advanced settings model picker is populated from `https://chatgpt.com/backend-api/codex/models` using your OAuth session. Availability depends on your ChatGPT subscription, account, workspace, and OpenAI rollout status. Recommended settings use the first visible model returned by the API, preserving the backend-provided order. If the model list cannot be fetched, the integration omits the model field so the Codex backend can use its own current default.
+The advanced model, reasoning-effort, and speed pickers are populated from `https://chatgpt.com/backend-api/codex/models` using your OAuth session. Availability depends on your ChatGPT subscription, account, workspace, and OpenAI rollout status. Recommended settings use the first visible model and its backend-provided defaults. If the model list cannot be fetched, the integration omits the model field so the Codex backend can use its own current default and uses compatible fallback choices for the other controls.
 
 ## How It Works
 

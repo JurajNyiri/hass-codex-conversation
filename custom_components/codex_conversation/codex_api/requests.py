@@ -34,6 +34,7 @@ class CodexRequest:
     reasoning_effort: str = "medium"
     reasoning_summary: str = "auto"
     text_verbosity: str = "medium"
+    service_tier: str = "default"
     tools: list[dict[str, Any]] = field(default_factory=list)
     supports_reasoning: bool | None = None
     supports_reasoning_summaries: bool | None = None
@@ -67,6 +68,8 @@ class CodexRequest:
             body["instructions"] = self.instructions
         if self.tools:
             body["tools"] = self.tools
+        if self.service_tier != "default":
+            body["service_tier"] = self.service_tier
         if self._is_reasoning_model():
             body["reasoning"] = {"effort": self.reasoning_effort}
             if self._supports_reasoning_summaries():

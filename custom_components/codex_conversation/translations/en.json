@@ -50,12 +50,14 @@
             "model": "Model",
             "reasoning_effort": "Reasoning effort",
             "reasoning_summary": "Reasoning summary",
-            "text_verbosity": "Text verbosity"
+            "text_verbosity": "Text verbosity",
+            "service_tier": "Speed"
           },
           "data_description": {
             "reasoning_effort": "How many reasoning tokens the model should generate before responding.",
             "reasoning_summary": "Controls the length and detail of the reasoning summary.",
-            "text_verbosity": "Controls the verbosity of the model's text output."
+            "text_verbosity": "Controls the verbosity of the model's text output.",
+            "service_tier": "Select a speed tier advertised for your account. Faster tiers may consume more usage."
           }
         }
       }
@@ -82,12 +84,14 @@
             "model": "Model",
             "reasoning_effort": "Reasoning effort",
             "reasoning_summary": "Reasoning summary",
-            "text_verbosity": "Text verbosity"
+            "text_verbosity": "Text verbosity",
+            "service_tier": "Speed"
           },
           "data_description": {
             "reasoning_effort": "How many reasoning tokens the model should generate before responding.",
             "reasoning_summary": "Controls the length and detail of the reasoning summary.",
-            "text_verbosity": "Controls the verbosity of the model's text output."
+            "text_verbosity": "Controls the verbosity of the model's text output.",
+            "service_tier": "Select a speed tier advertised for your account. Faster tiers may consume more usage."
           }
         }
       }

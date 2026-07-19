@@ -26,6 +26,8 @@ class CodexModel:
     supports_reasoning_summaries: bool | None = None
     support_verbosity: bool | None = None
     default_verbosity: str | None = None
+    service_tiers: tuple["CodexServiceTier", ...] = ()
+    default_service_tier: str | None = None
     capabilities_known: bool = False
 
     @classmethod
@@ -45,6 +47,19 @@ class CodexModel:
             elif isinstance(level, str):
                 reasoning_levels.append(level)
 
+        service_tiers = []
+        for tier in data.get("service_tiers") or []:
+            if isinstance(tier, dict) and isinstance(tier.get("id"), str):
+                service_tiers.append(
+                    CodexServiceTier(
+                        id=tier["id"],
+                        name=str(tier.get("name") or tier["id"]),
+                        description=str(tier.get("description") or ""),
+                    )
+                )
+            elif isinstance(tier, str):
+                service_tiers.append(CodexServiceTier(id=tier, name=tier))
+
         return cls(
             slug=slug,
             display_name=str(
@@ -61,6 +76,8 @@ class CodexModel:
             ),
             support_verbosity=_bool_or_none(data.get("support_verbosity")),
             default_verbosity=data.get("default_verbosity"),
+            service_tiers=tuple(service_tiers),
+            default_service_tier=data.get("default_service_tier"),
             capabilities_known=True,
         )
 
@@ -68,6 +85,15 @@ class CodexModel:
     def supports_reasoning(self) -> bool:
         """Return whether the endpoint says this model supports reasoning controls."""
         return bool(self.supported_reasoning_levels)
+
+
+@dataclass(frozen=True)
+class CodexServiceTier:
+    """A selectable request-speed tier advertised by the model catalog."""
+
+    id: str
+    name: str
+    description: str = ""
 
 
 def _bool_or_none(value: Any) -> bool | None:

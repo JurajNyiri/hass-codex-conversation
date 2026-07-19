@@ -50,12 +50,14 @@
             "model": "Modello",
             "reasoning_effort": "Impegno nel ragionamento",
             "reasoning_summary": "Riepilogo del ragionamento",
-            "text_verbosity": "Verbosità del testo"
+            "text_verbosity": "Verbosità del testo",
+            "service_tier": "Velocità"
           },
           "data_description": {
             "reasoning_effort": "Quanti token di ragionamento il modello deve generare prima di rispondere.",
             "reasoning_summary": "Controlla la lunghezza e il dettaglio del riepilogo del ragionamento.",
-            "text_verbosity": "Controlla la verbosità dell'output testuale del modello."
+            "text_verbosity": "Controlla la verbosità dell'output testuale del modello.",
+            "service_tier": "Seleziona un livello di velocità disponibile per il tuo account. I livelli più veloci possono consumare più utilizzo."
           }
         }
       }
@@ -82,12 +84,14 @@
             "model": "Modello",
             "reasoning_effort": "Impegno nel ragionamento",
             "reasoning_summary": "Riepilogo del ragionamento",
-            "text_verbosity": "Verbosità del testo"
+            "text_verbosity": "Verbosità del testo",
+            "service_tier": "Velocità"
           },
           "data_description": {
             "reasoning_effort": "Quanti token di ragionamento il modello deve generare prima di rispondere.",
             "reasoning_summary": "Controlla la lunghezza e il dettaglio del riepilogo del ragionamento.",
-            "text_verbosity": "Controlla la verbosità dell'output testuale del modello."
+            "text_verbosity": "Controlla la verbosità dell'output testuale del modello.",
+            "service_tier": "Seleziona un livello di velocità disponibile per il tuo account. I livelli più veloci possono consumare più utilizzo."
           }
         }
       }

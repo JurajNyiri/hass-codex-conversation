@@ -36,6 +36,7 @@ from .const import (
     CONF_REASONING_EFFORT,
     CONF_REASONING_SUMMARY,
     CONF_RECOMMENDED,
+    CONF_SERVICE_TIER,
     CONF_TEXT_VERBOSITY,
     DEFAULT_MODEL,
     DOMAIN,
@@ -43,6 +44,7 @@ from .const import (
     RECOMMENDED_CONVERSATION_OPTIONS,
     RECOMMENDED_REASONING_EFFORT,
     RECOMMENDED_REASONING_SUMMARY,
+    RECOMMENDED_SERVICE_TIER,
     RECOMMENDED_TEXT_VERBOSITY,
 )
 from .oauth import CodexHAAuth
@@ -59,6 +61,7 @@ def recommended_options_from_models(
     if model := latest_available_model(models):
         data[CONF_MODEL] = model.slug
         apply_model_capabilities(data, model)
+        apply_model_defaults(data, model)
     return data
 
 
@@ -80,6 +83,39 @@ def apply_model_capabilities(data: dict[str, Any], model: CodexModel) -> None:
     data[CONF_MODEL_SUPPORTS_REASONING] = model.supports_reasoning
     data[CONF_MODEL_SUPPORTS_REASONING_SUMMARIES] = model.supports_reasoning_summaries
     data[CONF_MODEL_SUPPORTS_TEXT_VERBOSITY] = model.support_verbosity
+
+
+def apply_model_defaults(data: dict[str, Any], model: CodexModel) -> None:
+    """Apply defaults advertised by a discovered model."""
+    if model.default_reasoning_level:
+        data[CONF_REASONING_EFFORT] = model.default_reasoning_level
+    if model.default_verbosity:
+        data[CONF_TEXT_VERBOSITY] = model.default_verbosity
+    data[CONF_SERVICE_TIER] = model.default_service_tier or RECOMMENDED_SERVICE_TIER
+
+
+def reasoning_selector_options(models: list[CodexModel], current: str) -> list[str]:
+    """Return live catalog reasoning efforts, preserving configured values."""
+    values = [
+        effort
+        for model in models
+        for effort in model.supported_reasoning_levels
+    ]
+    if not values:
+        values = ["low", "medium", "high"]
+    return list(dict.fromkeys([*values, current]))
+
+
+def service_tier_selector_options(
+    models: list[CodexModel], current: str
+) -> list[dict[str, str]]:
+    """Return live catalog speed tiers, preserving configured values."""
+    options = {"default": "Standard"}
+    for model in models:
+        for tier in model.service_tiers:
+            options.setdefault(tier.id, tier.name)
+    options.setdefault(current, current.replace("_", " ").title())
+    return [{"value": value, "label": label} for value, label in options.items()]
 
 
 class CodexConversationConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -307,7 +343,14 @@ class _BaseCodexSubentryFlow(ConfigSubentryFlow):
         models = await self._async_get_models()
         if not options.get(CONF_MODEL) and (model := latest_available_model(models)):
             options[CONF_MODEL] = model.slug
+            apply_model_defaults(options, model)
         model_options = self._model_selector_options(models)
+        reasoning_default = options.get(
+            CONF_REASONING_EFFORT, RECOMMENDED_REASONING_EFFORT
+        )
+        service_tier_default = options.get(
+            CONF_SERVICE_TIER, RECOMMENDED_SERVICE_TIER
+        )
 
         return self.async_show_form(
             step_id="advanced",
@@ -319,11 +362,11 @@ class _BaseCodexSubentryFlow(ConfigSubentryFlow):
                     ): SelectSelector(SelectSelectorConfig(options=model_options)),
                     vol.Required(
                         CONF_REASONING_EFFORT,
-                        default=options.get(
-                            CONF_REASONING_EFFORT, RECOMMENDED_REASONING_EFFORT
-                        ),
+                        default=reasoning_default,
                     ): SelectSelector(
-                        SelectSelectorConfig(options=["low", "medium", "high"])
+                        SelectSelectorConfig(
+                            options=reasoning_selector_options(models, reasoning_default)
+                        )
                     ),
                     vol.Required(
                         CONF_REASONING_SUMMARY,
@@ -343,6 +386,16 @@ class _BaseCodexSubentryFlow(ConfigSubentryFlow):
                     ): SelectSelector(
                         SelectSelectorConfig(options=["low", "medium", "high"])
                     ),
+                    vol.Required(
+                        CONF_SERVICE_TIER,
+                        default=service_tier_default,
+                    ): SelectSelector(
+                        SelectSelectorConfig(
+                            options=service_tier_selector_options(
+                                models, service_tier_default
+                            )
+                        )
+                    ),
                 }
             ),
         )
@@ -353,6 +406,7 @@ class _BaseCodexSubentryFlow(ConfigSubentryFlow):
         models = await self._async_get_models()
         if model := latest_available_model(models):
             data[CONF_MODEL] = model.slug
+            apply_model_defaults(data, model)
         return self._with_model_capabilities(data)
 
     async def _async_get_models(self) -> list[CodexModel]:

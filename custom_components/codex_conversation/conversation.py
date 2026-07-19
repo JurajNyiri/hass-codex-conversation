@@ -53,11 +53,13 @@ from .const import (
     CONF_PROMPT,
     CONF_REASONING_EFFORT,
     CONF_REASONING_SUMMARY,
+    CONF_SERVICE_TIER,
     CONF_TEXT_VERBOSITY,
     DEFAULT_MODEL,
     DOMAIN,
     RECOMMENDED_REASONING_EFFORT,
     RECOMMENDED_REASONING_SUMMARY,
+    RECOMMENDED_SERVICE_TIER,
     RECOMMENDED_TEXT_VERBOSITY,
 )
 from .oauth import CodexHAAuth
@@ -187,6 +189,9 @@ class CodexConversationEntity(ConversationEntity):
             text_verbosity=self._options.get(
                 CONF_TEXT_VERBOSITY, RECOMMENDED_TEXT_VERBOSITY
             ),
+            service_tier=self._options.get(
+                CONF_SERVICE_TIER, RECOMMENDED_SERVICE_TIER
+            ),
             supports_reasoning=self._options.get(CONF_MODEL_SUPPORTS_REASONING),
             supports_reasoning_summaries=self._options.get(
                 CONF_MODEL_SUPPORTS_REASONING_SUMMARIES
@@ -209,6 +214,7 @@ async def async_run_chat_log(
     reasoning_effort: str,
     reasoning_summary: str,
     text_verbosity: str,
+    service_tier: str = RECOMMENDED_SERVICE_TIER,
     supports_reasoning: bool | None = None,
     supports_reasoning_summaries: bool | None = None,
     supports_text_verbosity: bool | None = None,
@@ -267,6 +273,7 @@ async def async_run_chat_log(
             reasoning_effort=reasoning_effort,
             reasoning_summary=reasoning_summary,
             text_verbosity=text_verbosity,
+            service_tier=service_tier,
             supports_reasoning=supports_reasoning,
             supports_reasoning_summaries=supports_reasoning_summaries,
             supports_text_verbosity=supports_text_verbosity,
