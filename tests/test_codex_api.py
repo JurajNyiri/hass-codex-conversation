@@ -12,9 +12,9 @@ from custom_components.codex_conversation.codex_api import (
 from custom_components.codex_conversation.codex_api.models import CodexModel
 from custom_components.codex_conversation.codex_api.sse import parse_event
 from custom_components.codex_conversation.config_flow import (
+    default_options_from_models,
     latest_available_model,
     reasoning_selector_options,
-    recommended_options_from_models,
     service_tier_selector_options,
 )
 from custom_components.codex_conversation.const import CONF_MODEL, DEFAULT_MODEL
@@ -64,6 +64,7 @@ async def test_list_models_parses_available_models() -> None:
                     "supported_reasoning_levels": [{"effort": "medium"}],
                     "default_reasoning_level": "medium",
                     "supports_reasoning_summaries": True,
+                    "default_reasoning_summary": "none",
                     "support_verbosity": True,
                     "supported_in_api": True,
                     "priority": 10,
@@ -85,6 +86,7 @@ async def test_list_models_parses_available_models() -> None:
         "non-reasoning-model",
     ]
     assert models[0].supports_reasoning is True
+    assert models[0].default_reasoning_summary == "none"
     assert models[0].support_verbosity is True
     assert models[0].supported_in_api is True
     assert models[0].priority == 10
@@ -155,6 +157,13 @@ def test_request_serializes_non_default_service_tier() -> None:
     assert body["service_tier"] == "priority"
 
 
+def test_request_omits_disabled_reasoning_summary() -> None:
+    """None should disable the optional reasoning-summary request field."""
+    body = CodexRequest(model="gpt-5", input=[], reasoning_summary="none").to_body()
+
+    assert body["reasoning"] == {"effort": "medium"}
+
+
 def test_dynamic_catalog_selector_options() -> None:
     """Reasoning and speed choices should come from live model metadata."""
     model = CodexModel.from_dict(
@@ -170,35 +179,53 @@ def test_dynamic_catalog_selector_options() -> None:
     )
     assert model is not None
 
-    assert reasoning_selector_options([model], "medium") == [
+    assert reasoning_selector_options(model, "medium") == [
         "low",
         "xhigh",
         "ultra",
         "medium",
     ]
-    assert service_tier_selector_options([model], "default") == [
+    assert service_tier_selector_options(model, "default") == [
         {"value": "default", "label": "Standard"},
         {"value": "priority", "label": "Fast"},
     ]
 
 
-def test_recommended_options_use_first_visible_api_model_without_priority() -> None:
+def test_reasoning_options_are_scoped_to_selected_model() -> None:
+    """Efforts from another model must not leak into the selected model's form."""
+    model = CodexModel.from_dict(
+        {
+            "slug": "gpt-5.5",
+            "supported_reasoning_levels": ["low", "medium", "high", "xhigh"],
+        }
+    )
+    assert model is not None
+
+    assert reasoning_selector_options(model, "medium") == [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+    ]
+
+
+def test_default_options_use_first_visible_api_model_without_priority() -> None:
     """When the API omits priority, preserve its order for maintenance-free defaults."""
     models = [
         CodexModel.from_dict({"slug": "gpt-future", "visibility": "list"}),
         CodexModel.from_dict({"slug": "gpt-current", "visibility": "list"}),
     ]
 
-    options = recommended_options_from_models(
+    options = default_options_from_models(
         {CONF_MODEL: "fallback"}, [model for model in models if model is not None]
     )
 
     assert options[CONF_MODEL] == "gpt-future"
 
 
-def test_recommended_options_keep_automatic_when_discovery_has_no_models() -> None:
+def test_default_options_keep_automatic_when_discovery_has_no_models() -> None:
     """Without discovered models, keep automatic mode instead of hardcoding a slug."""
-    options = recommended_options_from_models({CONF_MODEL: DEFAULT_MODEL}, [])
+    options = default_options_from_models({CONF_MODEL: DEFAULT_MODEL}, [])
 
     assert options[CONF_MODEL] == DEFAULT_MODEL
 

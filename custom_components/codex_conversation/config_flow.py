@@ -35,7 +35,6 @@ from .const import (
     CONF_PROMPT,
     CONF_REASONING_EFFORT,
     CONF_REASONING_SUMMARY,
-    CONF_RECOMMENDED,
     CONF_SERVICE_TIER,
     CONF_TEXT_VERBOSITY,
     DEFAULT_MODEL,
@@ -53,10 +52,10 @@ _LOGGER = logging.getLogger(__name__)
 AUTO_MODEL_LABEL = "Automatic (Codex default)"
 
 
-def recommended_options_from_models(
+def default_options_from_models(
     defaults: dict[str, Any], models: list[CodexModel]
 ) -> dict[str, Any]:
-    """Return recommended options using live model discovery when available."""
+    """Return initial options using live model discovery when available."""
     data = defaults.copy()
     if model := latest_available_model(models):
         data[CONF_MODEL] = model.slug
@@ -89,25 +88,27 @@ def apply_model_defaults(data: dict[str, Any], model: CodexModel) -> None:
     """Apply defaults advertised by a discovered model."""
     if model.default_reasoning_level:
         data[CONF_REASONING_EFFORT] = model.default_reasoning_level
+    if model.default_reasoning_summary:
+        data[CONF_REASONING_SUMMARY] = model.default_reasoning_summary
     if model.default_verbosity:
         data[CONF_TEXT_VERBOSITY] = model.default_verbosity
     data[CONF_SERVICE_TIER] = model.default_service_tier or RECOMMENDED_SERVICE_TIER
 
 
-def reasoning_selector_options(models: list[CodexModel], current: str) -> list[str]:
-    """Return live catalog reasoning efforts, preserving configured values."""
-    values = [effort for model in models for effort in model.supported_reasoning_levels]
+def reasoning_selector_options(model: CodexModel | None, current: str) -> list[str]:
+    """Return reasoning efforts for one model, preserving configured values."""
+    values = list(model.supported_reasoning_levels) if model else []
     if not values:
         values = ["low", "medium", "high"]
     return list(dict.fromkeys([*values, current]))
 
 
 def service_tier_selector_options(
-    models: list[CodexModel], current: str
+    model: CodexModel | None, current: str
 ) -> list[dict[str, str]]:
-    """Return live catalog speed tiers, preserving configured values."""
+    """Return speed tiers for one model, preserving configured values."""
     options = {"default": "Standard"}
-    for model in models:
+    if model:
         for tier in model.service_tiers:
             options.setdefault(tier.id, tier.name)
     options.setdefault(current, current.replace("_", " ").title())
@@ -186,7 +187,7 @@ class CodexConversationConfigFlow(ConfigFlow, domain=DOMAIN):
             subentries=[
                 {
                     "subentry_type": "conversation",
-                    "data": recommended_options_from_models(
+                    "data": default_options_from_models(
                         RECOMMENDED_CONVERSATION_OPTIONS, models
                     ),
                     "title": "Codex Conversation",
@@ -194,7 +195,7 @@ class CodexConversationConfigFlow(ConfigFlow, domain=DOMAIN):
                 },
                 {
                     "subentry_type": "ai_task_data",
-                    "data": recommended_options_from_models(
+                    "data": default_options_from_models(
                         RECOMMENDED_AI_TASK_OPTIONS, models
                     ),
                     "title": "Codex AI Task",
@@ -280,130 +281,135 @@ class _BaseCodexSubentryFlow(ConfigSubentryFlow):
             return self.async_abort(reason="entry_not_loaded")
 
         options = self.options
+        models = await self._async_get_models()
+        if not options.get(CONF_MODEL) and (model := latest_available_model(models)):
+            options[CONF_MODEL] = model.slug
+            apply_model_defaults(options, model)
+
+        model_options = self._model_selector_options(models)
 
         if user_input is not None:
-            if user_input[CONF_RECOMMENDED]:
-                data = await self._async_recommended_data()
-                if self._supports_prompt_and_apis:
-                    data[CONF_PROMPT] = user_input.get(
-                        CONF_PROMPT, llm.DEFAULT_INSTRUCTIONS_PROMPT
-                    )
-                    data[CONF_LLM_HASS_API] = user_input.get(CONF_LLM_HASS_API) or []
-                return self._finalize_subentry(data)
+            selected_slug = user_input[CONF_MODEL]
+            if selected_slug != options.get(CONF_MODEL):
+                if model := self._model_by_slug(selected_slug):
+                    apply_model_defaults(options, model)
+            options[CONF_MODEL] = selected_slug
+            self._init_data = {CONF_MODEL: selected_slug}
+            return await self.async_step_settings()
 
-            self._init_data = user_input
-            return await self.async_step_advanced()
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_MODEL,
+                        default=options.get(CONF_MODEL, DEFAULT_MODEL),
+                    ): SelectSelector(SelectSelectorConfig(options=model_options))
+                }
+            ),
+        )
+
+    async def async_step_settings(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Configure options supported by the selected model."""
+        options = self.options
+        model = self._model_by_slug(options.get(CONF_MODEL, DEFAULT_MODEL))
+
+        if user_input is not None:
+            if self._supports_prompt_and_apis:
+                user_input.setdefault(
+                    CONF_PROMPT,
+                    options.get(CONF_PROMPT, llm.DEFAULT_INSTRUCTIONS_PROMPT),
+                )
+                user_input.setdefault(
+                    CONF_LLM_HASS_API,
+                    options.get(CONF_LLM_HASS_API, []),
+                )
+            data = {**self._init_data, **user_input}
+            return self._finalize_subentry(self._with_model_capabilities(data))
+
+        reasoning_default = options.get(
+            CONF_REASONING_EFFORT, RECOMMENDED_REASONING_EFFORT
+        )
+        service_tier_default = options.get(CONF_SERVICE_TIER, RECOMMENDED_SERVICE_TIER)
+
+        step_schema: dict = {}
 
         if self._supports_prompt_and_apis:
             hass_apis = [
                 {"value": api.id, "label": api.name}
                 for api in llm.async_get_apis(self.hass)
             ]
-            step_schema: dict = {
-                vol.Optional(
-                    CONF_PROMPT,
-                    description={
-                        "suggested_value": options.get(
-                            CONF_PROMPT, llm.DEFAULT_INSTRUCTIONS_PROMPT
-                        )
-                    },
-                ): TemplateSelector(),
-                vol.Optional(CONF_LLM_HASS_API): SelectSelector(
-                    SelectSelectorConfig(options=hass_apis, multiple=True)
-                ),
-                vol.Required(
-                    CONF_RECOMMENDED,
-                    default=options.get(CONF_RECOMMENDED, True),
-                ): bool,
-            }
-        else:
-            step_schema = {
-                vol.Required(
-                    CONF_RECOMMENDED,
-                    default=options.get(CONF_RECOMMENDED, True),
-                ): bool,
-            }
-
-        return self.async_show_form(step_id="init", data_schema=vol.Schema(step_schema))
-
-    async def async_step_advanced(
-        self, user_input: dict[str, Any] | None = None
-    ) -> SubentryFlowResult:
-        """Manage advanced options."""
-        options = self.options
-
-        if user_input is not None:
-            data = self._with_model_capabilities({**self._init_data, **user_input})
-            return self._finalize_subentry(data)
-
-        models = await self._async_get_models()
-        if not options.get(CONF_MODEL) and (model := latest_available_model(models)):
-            options[CONF_MODEL] = model.slug
-            apply_model_defaults(options, model)
-        model_options = self._model_selector_options(models)
-        reasoning_default = options.get(
-            CONF_REASONING_EFFORT, RECOMMENDED_REASONING_EFFORT
-        )
-        service_tier_default = options.get(CONF_SERVICE_TIER, RECOMMENDED_SERVICE_TIER)
-
-        return self.async_show_form(
-            step_id="advanced",
-            data_schema=vol.Schema(
+            step_schema.update(
                 {
-                    vol.Required(
-                        CONF_MODEL,
-                        default=options.get(CONF_MODEL, DEFAULT_MODEL),
-                    ): SelectSelector(SelectSelectorConfig(options=model_options)),
-                    vol.Required(
-                        CONF_REASONING_EFFORT,
-                        default=reasoning_default,
-                    ): SelectSelector(
-                        SelectSelectorConfig(
-                            options=reasoning_selector_options(
-                                models, reasoning_default
+                    vol.Optional(
+                        CONF_PROMPT,
+                        description={
+                            "suggested_value": options.get(
+                                CONF_PROMPT, llm.DEFAULT_INSTRUCTIONS_PROMPT
                             )
-                        )
-                    ),
-                    vol.Required(
-                        CONF_REASONING_SUMMARY,
-                        default=options.get(
-                            CONF_REASONING_SUMMARY, RECOMMENDED_REASONING_SUMMARY
-                        ),
+                        },
+                    ): TemplateSelector(),
+                    vol.Optional(
+                        CONF_LLM_HASS_API,
+                        default=options.get(CONF_LLM_HASS_API, []),
                     ): SelectSelector(
-                        SelectSelectorConfig(
-                            options=["auto", "short", "detailed", "off"]
-                        )
-                    ),
-                    vol.Required(
-                        CONF_TEXT_VERBOSITY,
-                        default=options.get(
-                            CONF_TEXT_VERBOSITY, RECOMMENDED_TEXT_VERBOSITY
-                        ),
-                    ): SelectSelector(
-                        SelectSelectorConfig(options=["low", "medium", "high"])
-                    ),
-                    vol.Required(
-                        CONF_SERVICE_TIER,
-                        default=service_tier_default,
-                    ): SelectSelector(
-                        SelectSelectorConfig(
-                            options=service_tier_selector_options(
-                                models, service_tier_default
-                            )
-                        )
+                        SelectSelectorConfig(options=hass_apis, multiple=True)
                     ),
                 }
-            ),
+            )
+
+        step_schema.update(
+            {
+                vol.Required(
+                    CONF_REASONING_EFFORT,
+                    default=reasoning_default,
+                ): SelectSelector(
+                    SelectSelectorConfig(
+                        options=reasoning_selector_options(model, reasoning_default)
+                    )
+                ),
+                vol.Required(
+                    CONF_REASONING_SUMMARY,
+                    default=options.get(
+                        CONF_REASONING_SUMMARY, RECOMMENDED_REASONING_SUMMARY
+                    ),
+                ): SelectSelector(
+                    SelectSelectorConfig(
+                        options=["none", "auto", "concise", "detailed"]
+                    )
+                ),
+                vol.Required(
+                    CONF_TEXT_VERBOSITY,
+                    default=options.get(
+                        CONF_TEXT_VERBOSITY, RECOMMENDED_TEXT_VERBOSITY
+                    ),
+                ): SelectSelector(
+                    SelectSelectorConfig(options=["low", "medium", "high"])
+                ),
+                vol.Required(
+                    CONF_SERVICE_TIER,
+                    default=service_tier_default,
+                ): SelectSelector(
+                    SelectSelectorConfig(
+                        options=service_tier_selector_options(
+                            model, service_tier_default
+                        )
+                    )
+                ),
+            }
+        )
+        return self.async_show_form(
+            step_id="settings", data_schema=vol.Schema(step_schema)
         )
 
-    async def _async_recommended_data(self) -> dict[str, Any]:
-        """Return recommended data using the latest available account model."""
-        data = self._default_data.copy()
-        models = await self._async_get_models()
-        if model := latest_available_model(models):
-            data[CONF_MODEL] = model.slug
-            apply_model_defaults(data, model)
-        return self._with_model_capabilities(data)
+    def _model_by_slug(self, slug: str) -> CodexModel | None:
+        """Return discovered metadata for a model slug."""
+        return next(
+            (model for model in getattr(self, "_models", []) if model.slug == slug),
+            None,
+        )
 
     async def _async_get_models(self) -> list[CodexModel]:
         """Fetch live model metadata, falling back to the bundled defaults."""

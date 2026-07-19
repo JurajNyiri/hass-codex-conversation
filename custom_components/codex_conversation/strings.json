@@ -35,29 +35,29 @@
       "step": {
         "init": {
           "data": {
-            "llm_hass_api": "Controlli Home Assistant",
-            "prompt": "[%key:common::config_flow::data::prompt%]",
-            "recommended": "Recommended model settings"
+            "model": "Model"
           },
           "data_description": {
-            "prompt": "Instruct how the model should respond. This can be a template.",
-            "llm_hass_api": "Select the Home Assistant API to expose to the model."
+            "model": "Choose a model first. The next page is populated with options advertised for that model."
           }
         },
-        "advanced": {
-          "title": "Advanced settings",
+        "settings": {
+          "title": "Model settings",
           "data": {
-            "model": "Model",
+            "llm_hass_api": "Controlli Home Assistant",
+            "prompt": "[%key:common::config_flow::data::prompt%]",
             "reasoning_effort": "Reasoning effort",
             "reasoning_summary": "Reasoning summary",
             "text_verbosity": "Text verbosity",
             "service_tier": "Speed"
           },
           "data_description": {
-            "reasoning_effort": "How many reasoning tokens the model should generate before responding.",
-            "reasoning_summary": "Controls the length and detail of the reasoning summary.",
-            "text_verbosity": "Controls the verbosity of the model's text output.",
-            "service_tier": "Select a speed tier advertised for your account. Faster tiers may consume more usage."
+            "prompt": "Instruct how the model should respond. This can be a template.",
+            "llm_hass_api": "Select the Home Assistant API to expose to the model.",
+            "reasoning_effort": "Sets reasoning.effort in the Codex request. Higher levels let the selected model spend more reasoning tokens before answering, which can improve difficult answers but increase latency and usage.",
+            "reasoning_summary": "Sets reasoning.summary. None omits the summary request; Auto lets the model choose; Concise requests a short summary; Detailed requests a longer reasoning summary. This is separate from the final answer.",
+            "text_verbosity": "Sets text.verbosity for the final answer: Low is concise, Medium is balanced, and High is more detailed.",
+            "service_tier": "Sets the request service_tier. Standard omits the field; Fast sends priority, providing faster responses with increased usage when available for your account."
           }
         }
       }
@@ -75,23 +75,25 @@
       "step": {
         "init": {
           "data": {
-            "recommended": "[%key:component::codex_conversation::config_subentries::conversation::step::init::data::recommended%]"
-          }
-        },
-        "advanced": {
-          "title": "[%key:component::codex_conversation::config_subentries::conversation::step::advanced::title%]",
-          "data": {
-            "model": "[%key:component::codex_conversation::config_subentries::conversation::step::advanced::data::model%]",
-            "reasoning_effort": "[%key:component::codex_conversation::config_subentries::conversation::step::advanced::data::reasoning_effort%]",
-            "reasoning_summary": "[%key:component::codex_conversation::config_subentries::conversation::step::advanced::data::reasoning_summary%]",
-            "text_verbosity": "[%key:component::codex_conversation::config_subentries::conversation::step::advanced::data::text_verbosity%]",
-            "service_tier": "[%key:component::codex_conversation::config_subentries::conversation::step::advanced::data::service_tier%]"
+            "model": "[%key:component::codex_conversation::config_subentries::conversation::step::init::data::model%]"
           },
           "data_description": {
-            "reasoning_effort": "[%key:component::codex_conversation::config_subentries::conversation::step::advanced::data_description::reasoning_effort%]",
-            "reasoning_summary": "[%key:component::codex_conversation::config_subentries::conversation::step::advanced::data_description::reasoning_summary%]",
-            "text_verbosity": "[%key:component::codex_conversation::config_subentries::conversation::step::advanced::data_description::text_verbosity%]",
-            "service_tier": "[%key:component::codex_conversation::config_subentries::conversation::step::advanced::data_description::service_tier%]"
+            "model": "[%key:component::codex_conversation::config_subentries::conversation::step::init::data_description::model%]"
+          }
+        },
+        "settings": {
+          "title": "[%key:component::codex_conversation::config_subentries::conversation::step::settings::title%]",
+          "data": {
+            "reasoning_effort": "[%key:component::codex_conversation::config_subentries::conversation::step::settings::data::reasoning_effort%]",
+            "reasoning_summary": "[%key:component::codex_conversation::config_subentries::conversation::step::settings::data::reasoning_summary%]",
+            "text_verbosity": "[%key:component::codex_conversation::config_subentries::conversation::step::settings::data::text_verbosity%]",
+            "service_tier": "[%key:component::codex_conversation::config_subentries::conversation::step::settings::data::service_tier%]"
+          },
+          "data_description": {
+            "reasoning_effort": "[%key:component::codex_conversation::config_subentries::conversation::step::settings::data_description::reasoning_effort%]",
+            "reasoning_summary": "[%key:component::codex_conversation::config_subentries::conversation::step::settings::data_description::reasoning_summary%]",
+            "text_verbosity": "[%key:component::codex_conversation::config_subentries::conversation::step::settings::data_description::text_verbosity%]",
+            "service_tier": "[%key:component::codex_conversation::config_subentries::conversation::step::settings::data_description::service_tier%]"
           }
         }
       }
@@ -110,10 +112,10 @@
     },
     "reasoning_summary": {
       "options": {
+        "none": "None",
         "auto": "[%key:common::state::auto%]",
-        "short": "Short",
-        "detailed": "Detailed",
-        "off": "[%key:common::state::off%]"
+        "concise": "Concise",
+        "detailed": "Detailed"
       }
     },
     "text_verbosity": {

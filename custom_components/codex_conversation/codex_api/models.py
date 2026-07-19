@@ -24,6 +24,7 @@ class CodexModel:
     supported_reasoning_levels: tuple[str, ...] = ()
     default_reasoning_level: str | None = None
     supports_reasoning_summaries: bool | None = None
+    default_reasoning_summary: str | None = None
     support_verbosity: bool | None = None
     default_verbosity: str | None = None
     service_tiers: tuple["CodexServiceTier", ...] = ()
@@ -72,8 +73,11 @@ class CodexModel:
             supported_reasoning_levels=tuple(reasoning_levels),
             default_reasoning_level=data.get("default_reasoning_level"),
             supports_reasoning_summaries=_bool_or_none(
-                data.get("supports_reasoning_summaries")
+                data.get("supports_reasoning_summary_parameter")
+                if "supports_reasoning_summary_parameter" in data
+                else data.get("supports_reasoning_summaries")
             ),
+            default_reasoning_summary=data.get("default_reasoning_summary"),
             support_verbosity=_bool_or_none(data.get("support_verbosity")),
             default_verbosity=data.get("default_verbosity"),
             service_tiers=tuple(service_tiers),

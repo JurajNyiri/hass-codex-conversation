@@ -72,7 +72,10 @@ class CodexRequest:
             body["service_tier"] = self.service_tier
         if self._is_reasoning_model():
             body["reasoning"] = {"effort": self.reasoning_effort}
-            if self._supports_reasoning_summaries():
+            if self._supports_reasoning_summaries() and self.reasoning_summary not in {
+                "none",
+                "off",
+            }:
                 body["reasoning"]["summary"] = self.reasoning_summary
             body["include"] = ["reasoning.encrypted_content"]
         if self._supports_text_verbosity():

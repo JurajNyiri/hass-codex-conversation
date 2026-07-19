@@ -35,29 +35,29 @@
       "step": {
         "init": {
           "data": {
-            "llm_hass_api": "Home Assistant controls",
-            "prompt": "Instructions",
-            "recommended": "Recommended model settings"
+            "model": "Model"
           },
           "data_description": {
-            "prompt": "Instruct how the model should respond. This can be a template.",
-            "llm_hass_api": "Select the Home Assistant API to expose to the model."
+            "model": "Choose a model first. The next page is populated with options advertised for that model."
           }
         },
-        "advanced": {
-          "title": "Advanced settings",
+        "settings": {
+          "title": "Model settings",
           "data": {
-            "model": "Model",
+            "llm_hass_api": "Home Assistant controls",
+            "prompt": "Instructions",
             "reasoning_effort": "Reasoning effort",
             "reasoning_summary": "Reasoning summary",
             "text_verbosity": "Text verbosity",
             "service_tier": "Speed"
           },
           "data_description": {
-            "reasoning_effort": "How many reasoning tokens the model should generate before responding.",
-            "reasoning_summary": "Controls the length and detail of the reasoning summary.",
-            "text_verbosity": "Controls the verbosity of the model's text output.",
-            "service_tier": "Select a speed tier advertised for your account. Faster tiers may consume more usage."
+            "prompt": "Instruct how the model should respond. This can be a template.",
+            "llm_hass_api": "Select the Home Assistant API to expose to the model.",
+            "reasoning_effort": "Sets reasoning.effort in the Codex request. Higher levels let the selected model spend more reasoning tokens before answering, which can improve difficult answers but increase latency and usage.",
+            "reasoning_summary": "Sets reasoning.summary. None omits the summary request; Auto lets the model choose; Concise requests a short summary; Detailed requests a longer reasoning summary. This is separate from the final answer.",
+            "text_verbosity": "Sets text.verbosity for the final answer: Low is concise, Medium is balanced, and High is more detailed.",
+            "service_tier": "Sets the request service_tier. Standard omits the field; Fast sends priority, providing faster responses with increased usage when available for your account."
           }
         }
       }
@@ -75,23 +75,25 @@
       "step": {
         "init": {
           "data": {
-            "recommended": "Recommended model settings"
+            "model": "Model"
+          },
+          "data_description": {
+            "model": "Choose a model first. The next page is populated with options advertised for that model."
           }
         },
-        "advanced": {
-          "title": "Advanced settings",
+        "settings": {
+          "title": "Model settings",
           "data": {
-            "model": "Model",
             "reasoning_effort": "Reasoning effort",
             "reasoning_summary": "Reasoning summary",
             "text_verbosity": "Text verbosity",
             "service_tier": "Speed"
           },
           "data_description": {
-            "reasoning_effort": "How many reasoning tokens the model should generate before responding.",
-            "reasoning_summary": "Controls the length and detail of the reasoning summary.",
-            "text_verbosity": "Controls the verbosity of the model's text output.",
-            "service_tier": "Select a speed tier advertised for your account. Faster tiers may consume more usage."
+            "reasoning_effort": "Sets reasoning.effort in the Codex request. Higher levels let the selected model spend more reasoning tokens before answering, which can improve difficult answers but increase latency and usage.",
+            "reasoning_summary": "Sets reasoning.summary. None omits the summary request; Auto lets the model choose; Concise requests a short summary; Detailed requests a longer reasoning summary. This is separate from the final answer.",
+            "text_verbosity": "Sets text.verbosity for the final answer: Low is concise, Medium is balanced, and High is more detailed.",
+            "service_tier": "Sets the request service_tier. Standard omits the field; Fast sends priority, providing faster responses with increased usage when available for your account."
           }
         }
       }

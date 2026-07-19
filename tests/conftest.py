@@ -42,7 +42,7 @@ TOKEN_DICT = {
 
 @pytest.fixture
 def mock_config_entry() -> MockConfigEntry:
-    """Config entry pre-loaded with recommended options."""
+    """Config entry pre-loaded with default options."""
     return MockConfigEntry(
         domain=DOMAIN,
         entry_id=ENTRY_ID,

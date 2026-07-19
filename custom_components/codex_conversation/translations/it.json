@@ -35,29 +35,29 @@
       "step": {
         "init": {
           "data": {
-            "llm_hass_api": "Controlli Home Assistant",
-            "prompt": "Istruzioni",
-            "recommended": "Impostazioni modello consigliate"
+            "model": "Modello"
           },
           "data_description": {
-            "prompt": "Indica al modello come rispondere. Può essere un template.",
-            "llm_hass_api": "Seleziona le API di Home Assistant da esporre al modello."
+            "model": "Scegli prima un modello. La pagina successiva mostra le opzioni disponibili per quel modello."
           }
         },
-        "advanced": {
-          "title": "Impostazioni avanzate",
+        "settings": {
+          "title": "Impostazioni modello",
           "data": {
-            "model": "Modello",
+            "llm_hass_api": "Controlli Home Assistant",
+            "prompt": "Istruzioni",
             "reasoning_effort": "Impegno nel ragionamento",
             "reasoning_summary": "Riepilogo del ragionamento",
             "text_verbosity": "Verbosità del testo",
             "service_tier": "Velocità"
           },
           "data_description": {
-            "reasoning_effort": "Quanti token di ragionamento il modello deve generare prima di rispondere.",
-            "reasoning_summary": "Controlla la lunghezza e il dettaglio del riepilogo del ragionamento.",
-            "text_verbosity": "Controlla la verbosità dell'output testuale del modello.",
-            "service_tier": "Seleziona un livello di velocità disponibile per il tuo account. I livelli più veloci possono consumare più utilizzo."
+            "prompt": "Indica al modello come rispondere. Può essere un template.",
+            "llm_hass_api": "Seleziona le API di Home Assistant da esporre al modello.",
+            "reasoning_effort": "Imposta reasoning.effort nella richiesta Codex. Livelli superiori consentono al modello di usare più token di ragionamento, aumentando potenzialmente latenza e utilizzo.",
+            "reasoning_summary": "Imposta reasoning.summary. Nessuno omette il riepilogo; Auto lascia scegliere al modello; Conciso richiede un riepilogo breve; Dettagliato ne richiede uno più lungo.",
+            "text_verbosity": "Imposta text.verbosity per la risposta finale: Bassa è concisa, Media è bilanciata e Alta è più dettagliata.",
+            "service_tier": "Imposta service_tier. Standard omette il campo; Veloce invia priority, con risposte più rapide e maggiore utilizzo quando disponibile."
           }
         }
       }
@@ -75,23 +75,25 @@
       "step": {
         "init": {
           "data": {
-            "recommended": "Impostazioni modello consigliate"
+            "model": "Modello"
+          },
+          "data_description": {
+            "model": "Scegli prima un modello. La pagina successiva mostra le opzioni disponibili per quel modello."
           }
         },
-        "advanced": {
-          "title": "Impostazioni avanzate",
+        "settings": {
+          "title": "Impostazioni modello",
           "data": {
-            "model": "Modello",
             "reasoning_effort": "Impegno nel ragionamento",
             "reasoning_summary": "Riepilogo del ragionamento",
             "text_verbosity": "Verbosità del testo",
             "service_tier": "Velocità"
           },
           "data_description": {
-            "reasoning_effort": "Quanti token di ragionamento il modello deve generare prima di rispondere.",
-            "reasoning_summary": "Controlla la lunghezza e il dettaglio del riepilogo del ragionamento.",
-            "text_verbosity": "Controlla la verbosità dell'output testuale del modello.",
-            "service_tier": "Seleziona un livello di velocità disponibile per il tuo account. I livelli più veloci possono consumare più utilizzo."
+            "reasoning_effort": "Imposta reasoning.effort nella richiesta Codex. Livelli superiori consentono al modello di usare più token di ragionamento, aumentando potenzialmente latenza e utilizzo.",
+            "reasoning_summary": "Imposta reasoning.summary. Nessuno omette il riepilogo; Auto lascia scegliere al modello; Conciso richiede un riepilogo breve; Dettagliato ne richiede uno più lungo.",
+            "text_verbosity": "Imposta text.verbosity per la risposta finale: Bassa è concisa, Media è bilanciata e Alta è più dettagliata.",
+            "service_tier": "Imposta service_tier. Standard omette il campo; Veloce invia priority, con risposte più rapide e maggiore utilizzo quando disponibile."
           }
         }
       }

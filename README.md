@@ -68,7 +68,7 @@ After setup, you can change options from **Settings -> Devices & Services -> Ope
 
 ### Available Models
 
-The advanced model, reasoning-effort, and speed pickers are populated from `https://chatgpt.com/backend-api/codex/models` using your OAuth session. Availability depends on your ChatGPT subscription, account, workspace, and OpenAI rollout status. Recommended settings use the first visible model and its backend-provided defaults. If the model list cannot be fetched, the integration omits the model field so the Codex backend can use its own current default and uses compatible fallback choices for the other controls.
+The model picker is populated from `https://chatgpt.com/backend-api/codex/models` using your OAuth session. After choosing a model, the integration builds the settings page from that model's advertised reasoning levels, defaults, and speed tiers. This prevents model-specific choices such as `ultra` from appearing for models that do not support them. Availability depends on your ChatGPT subscription, account, workspace, and OpenAI rollout status. If discovery fails, the integration uses compatible fallback choices.
 
 ## How It Works
 
