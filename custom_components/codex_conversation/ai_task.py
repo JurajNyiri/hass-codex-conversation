@@ -121,9 +121,7 @@ class CodexAITaskEntity(ai_task.AITaskEntity):
             text_verbosity=self._options.get(
                 CONF_TEXT_VERBOSITY, RECOMMENDED_TEXT_VERBOSITY
             ),
-            service_tier=self._options.get(
-                CONF_SERVICE_TIER, RECOMMENDED_SERVICE_TIER
-            ),
+            service_tier=self._options.get(CONF_SERVICE_TIER, RECOMMENDED_SERVICE_TIER),
             supports_reasoning=self._options.get(CONF_MODEL_SUPPORTS_REASONING),
             supports_reasoning_summaries=self._options.get(
                 CONF_MODEL_SUPPORTS_REASONING_SUMMARIES
@@ -185,9 +183,7 @@ class CodexAITaskEntity(ai_task.AITaskEntity):
             text_verbosity=self._options.get(
                 CONF_TEXT_VERBOSITY, RECOMMENDED_TEXT_VERBOSITY
             ),
-            service_tier=self._options.get(
-                CONF_SERVICE_TIER, RECOMMENDED_SERVICE_TIER
-            ),
+            service_tier=self._options.get(CONF_SERVICE_TIER, RECOMMENDED_SERVICE_TIER),
             supports_reasoning=self._options.get(CONF_MODEL_SUPPORTS_REASONING),
             supports_reasoning_summaries=self._options.get(
                 CONF_MODEL_SUPPORTS_REASONING_SUMMARIES

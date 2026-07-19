@@ -96,11 +96,7 @@ def apply_model_defaults(data: dict[str, Any], model: CodexModel) -> None:
 
 def reasoning_selector_options(models: list[CodexModel], current: str) -> list[str]:
     """Return live catalog reasoning efforts, preserving configured values."""
-    values = [
-        effort
-        for model in models
-        for effort in model.supported_reasoning_levels
-    ]
+    values = [effort for model in models for effort in model.supported_reasoning_levels]
     if not values:
         values = ["low", "medium", "high"]
     return list(dict.fromkeys([*values, current]))
@@ -348,9 +344,7 @@ class _BaseCodexSubentryFlow(ConfigSubentryFlow):
         reasoning_default = options.get(
             CONF_REASONING_EFFORT, RECOMMENDED_REASONING_EFFORT
         )
-        service_tier_default = options.get(
-            CONF_SERVICE_TIER, RECOMMENDED_SERVICE_TIER
-        )
+        service_tier_default = options.get(CONF_SERVICE_TIER, RECOMMENDED_SERVICE_TIER)
 
         return self.async_show_form(
             step_id="advanced",
@@ -365,7 +359,9 @@ class _BaseCodexSubentryFlow(ConfigSubentryFlow):
                         default=reasoning_default,
                     ): SelectSelector(
                         SelectSelectorConfig(
-                            options=reasoning_selector_options(models, reasoning_default)
+                            options=reasoning_selector_options(
+                                models, reasoning_default
+                            )
                         )
                     ),
                     vol.Required(

@@ -150,9 +150,7 @@ def test_request_keeps_prefix_fallback_without_capabilities() -> None:
 
 def test_request_serializes_non_default_service_tier() -> None:
     """A selected catalog speed tier should be sent to the backend."""
-    body = CodexRequest(
-        model="gpt-5", input=[], service_tier="priority"
-    ).to_body()
+    body = CodexRequest(model="gpt-5", input=[], service_tier="priority").to_body()
 
     assert body["service_tier"] == "priority"
 
