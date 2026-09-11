@@ -7,6 +7,7 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_entry_oauth2_flow, config_validation as cv
 
+from .config_tools import register_apis
 from .const import DOMAIN
 from .oauth import CodexOAuth2Implementation
 
@@ -21,6 +22,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     config_entry_oauth2_flow.async_register_implementation(
         hass, DOMAIN, CodexOAuth2Implementation(hass)
     )
+    hass.data.setdefault(DOMAIN, {})["_unregister_apis"] = register_apis(hass)
     return True
 
 

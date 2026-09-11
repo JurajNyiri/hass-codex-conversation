@@ -18,6 +18,7 @@ This integration reuses the same authenticated Codex backend flow and exposes it
 - Home Assistant Assist integration.
 - Automatic token refresh.
 - Initial `ai_task` support for `generate_data`.
+- Home Assistant configuration tools for scripts and automations.
 
 ## Requirements
 
@@ -55,6 +56,46 @@ This integration reuses the same authenticated Codex backend flow and exposes it
 5. Approve the login and complete the integration setup.
 
 ## Configuration
+
+### Home Assistant configuration skills
+
+The Codex conversation agent exposes a `Codex Home Assistant configuration`
+API alongside the normal Assist API. It can:
+
+- list scripts and automations;
+- create or replace entries in `scripts.yaml` and `automations.yaml`;
+- create validated Lovelace dashboard YAML under `codex_dashboards/`;
+- reload scripts and automations through Home Assistant services; and
+- call normal Home Assistant services through the Assist API.
+
+Writes are limited to the dedicated script and automation files. They use
+atomic replacement and return errors to Codex instead of silently applying an
+invalid file.
+
+For broader YAML changes, select `Codex Home Assistant YAML files` in the
+conversation subentry's Home Assistant API list. This API is intentionally
+opt-in and requires `confirm: true` in each call. It only permits `.yaml` and
+`.yml` files inside the Home Assistant configuration directory, including
+dashboard YAML files. Keep this disabled unless you want Codex to edit other
+configuration files. It provides `read_yaml_file` and `edit_yaml_file`; common
+credential fields are redacted when files are read.
+
+Read results are not safe round-trip documents: they may contain
+`[REDACTED]` placeholders. Back up critical files and manually restore those
+values before making any manual edit. The general agent editor will refuse to
+replace files that contain sensitive fields.
+
+The general editor refuses to replace an existing YAML file if it detects
+sensitive-key fields. Always back up critical files before enabling agent file
+editing. Targeted script, automation, and dashboard tools should be preferred
+for those file types.
+
+After changing YAML, ask Codex to run the corresponding reload tool. A reload
+does not restart Home Assistant. Configuration-managed automations may be
+stored elsewhere or managed by the UI, so the dedicated automation tools only
+edit `automations.yaml`. Dashboard creation writes a file but does not change
+the Lovelace storage backend; add the generated file to a YAML-mode dashboard
+before using it. The opt-in YAML editor can update that dashboard file later.
 
 After setup, you can change options from **Settings -> Devices & Services -> OpenAI Codex Conversation -> Configure**.
 
@@ -145,6 +186,14 @@ This starts Home Assistant using `config/configuration.yaml`.
 - `Validate` includes both `hassfest` and HACS validation.
 - Pre-commit now uses Ruff, codespell, JSON/YAML checks, and Prettier for repository files.
 - Dependabot is configured for GitHub Actions and Python dependencies.
+
+## Credits
+
+This fork is based on [JurajNyiri/hass-codex-conversation](https://github.com/JurajNyiri/hass-codex-conversation), which in turn is a fork of [petretiandrea/hass-codex-conversation](https://github.com/petretiandrea/hass-codex-conversation).
+The Codex conversation, OAuth, and Home Assistant integration foundation are
+retained from that upstream work. The configuration-skill additions in this
+fork were authored for `GeneralUltra758/hass-codex-conversation` and are
+documented in [ATTRIBUTIONS.md](ATTRIBUTIONS.md).
 
 ## Disclaimer
 

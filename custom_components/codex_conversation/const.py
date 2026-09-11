@@ -4,6 +4,8 @@ from homeassistant.const import CONF_LLM_HASS_API  # noqa: F401
 from homeassistant.helpers import llm
 
 DOMAIN = "codex_conversation"
+CONFIG_API_ID = "codex_hass_config"
+FILES_API_ID = "codex_hass_files"
 
 # Options keys
 CONF_MODEL = "model"
@@ -24,7 +26,7 @@ RECOMMENDED_TEXT_VERBOSITY = "medium"
 RECOMMENDED_SERVICE_TIER = "default"
 
 RECOMMENDED_CONVERSATION_OPTIONS: dict = {
-    CONF_LLM_HASS_API: [llm.LLM_API_ASSIST],
+    CONF_LLM_HASS_API: [llm.LLM_API_ASSIST, CONFIG_API_ID],
     CONF_PROMPT: llm.DEFAULT_INSTRUCTIONS_PROMPT,
     CONF_MODEL: DEFAULT_MODEL,
     CONF_REASONING_EFFORT: RECOMMENDED_REASONING_EFFORT,
